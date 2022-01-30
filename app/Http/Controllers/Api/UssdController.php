@@ -8,6 +8,11 @@ use Illuminate\Http\Response;
 
 class UssdController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('log:api');
+    }
+    
     public function __invoke(Request $request): Response
     {
         return response($request->all());
