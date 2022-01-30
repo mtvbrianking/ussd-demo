@@ -28,7 +28,7 @@ class CheckUserAction extends Action
         }
 
         $this->record->set('user', $user);
-        $this->record->set('_user', serialize($user));
+        // $this->record->set('_user', serialize($user));
 
         $serviceCode = $this->record->get('serviceCode');
 
