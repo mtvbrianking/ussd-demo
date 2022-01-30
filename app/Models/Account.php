@@ -47,4 +47,24 @@ class Account extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
+
+    public function transactions(): hasMany
+    {
+        return $this->hasMany(Transaction::class, 'account_id', 'id');
+    }
+
+    public function recentTransactions(): hasMany
+    {
+        return $this->hasMany(Transaction::class, 'account_id', 'id')->orderBy('created_at', 'desc');
+    }
+
+    public function debitTransactions(): hasMany
+    {
+        return $this->hasMany(Transaction::class, 'account_id', 'id')->debits();
+    }
+
+    public function creditTransactions(): hasMany
+    {
+        return $this->hasMany(Transaction::class, 'account_id', 'id')->credits();
+    }
 }
