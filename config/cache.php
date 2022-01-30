@@ -92,6 +92,13 @@ return [
             'driver' => 'octane',
         ],
 
+        'sqlite' => [
+            'driver' => 'sqlite',
+            'table' => 'cache',
+            'database' => env('SQLITE_CACHE_DATABASE', database_path('cache.sqlite')),
+            'prefix' => '',
+        ],
+
     ],
 
     /*
