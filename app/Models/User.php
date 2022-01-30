@@ -42,4 +42,34 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    /**
+     * User's accounts.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function accounts()
+    {
+        return $this->hasMany(Account::class, 'user_id', 'id');
+    }
+
+    /**
+     * User's savings accounts.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function savingAccounts()
+    {
+        return $this->hasMany(Account::class, 'user_id', 'id')->savings();
+    }
+
+    /**
+     * User's loan accounts.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function loanAccounts()
+    {
+        return $this->hasMany(Account::class, 'user_id', 'id')->loans();
+    }
 }
