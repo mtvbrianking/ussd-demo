@@ -35,14 +35,6 @@ class SqliteStore extends DatabaseStore
 
     public function flushLike($pattern)
     {
-        $matched = $this->connection
-            ->table('cache')
-            ->select('key')
-            ->where('key', 'like', $pattern)
-            ->pluck('key');
-
-        $matched->each(function($key) {
-            $this->connection->table('cache')->where('key', $key)->delete();
-        });
+        $this->connection->table('cache')->where('key', 'like', $pattern)->delete();
     }
 }
