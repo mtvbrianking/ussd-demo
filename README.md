@@ -10,6 +10,15 @@ Tailored to..
 You may test via Postman or any other CURL client of your choice
 
 ```bash
+curl http://localhost:8000/api \
+  -d 'phoneNumber=+256772100104' \
+  -d 'serviceCode=*384*35711#' \
+  -d 'text=' \
+  -d 'sessionId=ATUid_6c772a68e52bfc41e8e8d5289db4d90c' \
+  -d 'networkCode=99999'
+```
+
+```bash
 [2022-01-30 15:07:54] local.INFO: HTTP_LOG_ExeHVbBxX6 [REQUEST] POST /api HTTP/1.1  
 [2022-01-30 15:07:54] local.DEBUG: HTTP_LOG_ExeHVbBxX6 [REQUEST] [Headers]
 Accept-Encoding:   gzip
@@ -21,7 +30,7 @@ X-Forwarded-For:   164.177.141.82
 X-Forwarded-Proto: https
   
 [2022-01-30 15:07:54] local.DEBUG: HTTP_LOG_ExeHVbBxX6 [REQUEST] [Body]
-phoneNumber=%2B256772100104&serviceCode=%2A384%2A35711%23&text=&sessionId=ATUid_6c772a68e52bfc41e8e8d5289db4d90c&networkCode=99999  
+phoneNumber=%2B256772100104&serviceCode=%2A384%2A35711%23&text=&sessionId=ATUid_6c772a68e52bfc41e8e8d5289db4d90c&networkCode=99999
 [2022-01-30 15:07:54] local.INFO: HTTP_LOG_ExeHVbBxX6 [RESPONSE] HTTP/1.1 200 OK 1.00s  
 [2022-01-30 15:07:54] local.DEBUG: HTTP_LOG_ExeHVbBxX6 [RESPONSE] [Headers]
 Cache-Control:         no-cache, private
