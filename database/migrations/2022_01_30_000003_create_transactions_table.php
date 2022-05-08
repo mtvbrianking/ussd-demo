@@ -17,7 +17,7 @@ class CreateTransactionsTable extends Migration
             $table->id();
             $table->string('ext_id')->nullable();
             $table->string('ext_provider')->nullable();
-            $table->integer('account_id')->unsigned()->nullable();
+            $table->bigInteger('account_id')->unsigned()->nullable();
             $table->enum('type', ['debit', 'credit'])->default('debit');
             $table->string('description')->nullable();
             $table->float('amount', 0.0);
