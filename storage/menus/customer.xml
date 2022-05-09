@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<menus>
+    <menu name="customer">
+        <variable name="color" value="blue"/>
+        <if key="color" value="blue">
+            <response text="It's a boy"/>
+        </if>
+        <options header="Send Money">
+            <option text="Asia">
+                <options header="Asia">
+                    <option text="China">
+                        <options header="China">
+                            <option text="Bank Transfer">
+                                <variable name="env" value="env"/>
+                                <question name="alias" text="EnterAlias"/>
+                                <dump text="Halted"/>
+                                <response text="AsiaChinaBankTransferComingSoon"/>
+                            </option>
+                            <option text="Ali Pay">
+                                <response text="AsiaChinaAliPayComingSoon"/>
+                            </option>
+                            <option text="Union Pay">
+                                <response text="AsiaChinaUnionPayComingSoon"/>
+                            </option>
+                        </options>
+                    </option>
+                    <option text="India">
+                        <options header="India">
+                            <option text="Bank Transfer">
+                                <response text="ComingSoon"/>
+                            </option>
+                        </options>
+                    </option>
+                    <option text="Japan">
+                        <response text="ComingSoon"/>
+                    </option>
+                </options>
+            </option>
+            <option text="Europe">
+                <options header="Europe">
+                    <option text="Turkey">
+                        <options header="Turkey">
+                            <option text="Bank Transfer">
+                                <variable name="env" value="uat"/>
+                                <question name="alias"/>
+                                <dump text="Halted"/>
+                                <response text="ComingSoon"/>
+                            </option>
+                        </options>
+                    </option>
+                </options>
+            </option>
+            <test arg="Argument" param="Parameter"/>
+            <option text="Americas">
+                <response text="ComingSoon"/>
+            </option>
+        </options>
+        <options header="Account">
+            <response text="Testing"/>
+        </options>
+    </menu>
+</menus>
