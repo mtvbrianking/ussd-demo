@@ -1,19 +1,34 @@
 #!/usr/bin/env python3
 
+from requests.exceptions import HTTPError
 import argparse
 import requests
 import uuid
 import sys
 
-def ussd(url, data):
-    return requests.post(url, data)
+def ussd(url, body):
+    try:
+        return requests.post(url, json=body, headers={'Accept': 'application/json'})
+    except HTTPError as http_err:
+        print(f'HTTP error occurred: {http_err}')
+    except Exception as err:
+        print(f'Other error occurred: {err}')
 
 def clean(ussdCode):
     return ussdCode.lstrip('*').rstrip('#')
 
-def stop(responseText):
-    cmd = responseText[0:4]
-    return cmd == 'END '
+def validate(response):
+    content = response.json();
+
+    if response.status_code != 200:
+        message = content['message']
+        print(f'\nError ({response.status_code}): {message}')
+        sys.exit(0);
+
+    if content['flow'] == 'break':
+        data = content['data']
+        print(f'\n{data}')
+        sys.exit(0);
 
 if __name__ == "__main__":
 
@@ -26,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument('--service_code', help="USSD shortcode", type=str, default="*308#", metavar='')
     parser.add_argument('--dail', help="User input", type=str, default="", metavar='')
     parser.add_argument('--session_id', help="Session ID", type=str, default=session_id, metavar='')
-    parser.add_argument('--version', action='version', version='%(prog)s v1.0 by eibatrm', help="Show program's info")
+    parser.add_argument('--version', action='version', version='%(prog)s v1.0 by bmatovu', help="Show program's info")
     parser.add_argument('--help', action='help', default=argparse.SUPPRESS, help='Show usage')
 
     args = parser.parse_args()
@@ -39,41 +54,37 @@ if __name__ == "__main__":
 
     answers = clean(dail.replace(service_code, ''))
 
-    data = {
-        'sessionId': args.session_id,
-        'networkCode': args.network_code,
-        'phoneNumber': args.number,
+    body = {
+        'session_id': args.session_id,
+        'network_code': args.network_code,
+        'phone_number': args.number,
         'input': dail,
-        'serviceCode': service_code,
-        'text': answers
+        'service_code': service_code,
+        'answers': answers
     }
 
-    response = ussd(args.api_uri, data)
+    response = ussd(args.api_uri, body)
 
-    if stop(response.text):
-        print("\n" + response.text[4:])
-        sys.exit(0);
+    validate(response)
 
-    answer = input(response.text[4:] + "\n")
+    answer = input(response.json()['data'] + "\n")
 
     # ..................................
 
     while True:
         dail += "*" + answer
 
-        data = {
-            'sessionId': args.session_id,
-            'networkCode': args.network_code,
-            'phoneNumber': args.number,
+        body = {
+            'session_id': args.session_id,
+            'network_code': args.network_code,
+            'phone_number': args.number,
             'input': dail,
-            'serviceCode': service_code,
-            'text': answer
+            'service_code': service_code,
+            'answers': answer
         }
 
-        response = ussd(args.api_uri, data)
+        response = ussd(args.api_uri, body)
 
-        if stop(response.text):
-            print("\n" + response.text[4:])
-            break;
+        validate(response)
 
-        answer = input("\n" + response.text[4:] + "\n")
+        answer = input("\n" + response.text + "\n")
