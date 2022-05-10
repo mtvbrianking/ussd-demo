@@ -8,65 +8,81 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Sparors\Ussd\Facades\Ussd;
 
-class Parser
+class ResponseTag
 {
-    protected \DOMXPath $xpath;
+    protected $session_id;
 
-    protected string $exp;
-
-    public function __construct(\DOMXPath $xpath, string $exp)
+    public function __construct($session_id)
     {
-        $this->xpath = $xpath;
-        $this->exp = $exp;
+        $this->session_id = $session_id;
     }
 
-    protected function renderEl($el, $idx = null) {
-        if($idx !== null) { ++$idx; echo "{$idx}) "; }
-        
-        echo "<{$el->tagName}";
-        
-        foreach ($el->attributes as $attr) { 
-            echo " {$attr->name}=\"{$attr->value}\"";
-        }
-
-        echo "/>", PHP_EOL;
+    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    {
+        return $attributes->getNamedItem("text")->nodeValue;
     }
 
-    protected function readAnswers(&$answers = [])
+    public function process(?string $answer): void
     {
-        $answer = array_shift($answers);
-
-        if($answer !== null) {
-            return $answer;
-        }
-
-        $stdin = fopen("php://stdin", "r");
-        
-        return trim(fgets($stdin));
-    }
-
-    public function walk($answers)
-    {
-        $els = $this->xpath->query($this->exp);
-
-        foreach($els as $idx => $el) {
-            $pos = ++$idx;
-            
-            $this->renderEl($el);
-
-            if($el->tagName == 'options') {
-                $OptionEls = $this->xpath->query("{$this->exp}[{$pos}]/option");
-                foreach ($OptionEls as $idx => $OptionEl) {
-                    $this->renderEl($OptionEl, $idx);
-                }
-            }
-
-            $this->readAnswers($answers);
-        }
+        // ...
     }
 }
+
+class VariableTag
+{
+    protected $session_id;
+
+    public function __construct($session_id)
+    {
+        $this->session_id = $session_id;
+    }
+
+    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    {
+        $name = $attributes->getNamedItem("name")->nodeValue;
+        $value = $attributes->getNamedItem("value")->nodeValue;
+
+        Cache::put("{$this->session_id}_{$name}", $value);
+
+        return '';
+    }
+
+    public function process(?string $answer): void
+    {
+        // ...
+    }
+}
+
+class QuestionTag
+{
+    protected $session_id;
+
+    public function __construct($session_id)
+    {
+        $this->session_id = $session_id;
+    }
+
+    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    {
+        return $attributes->getNamedItem("text")->nodeValue;
+    }
+
+    public function process(?string $answer): void
+    {
+        if($answer == '') {
+            throw new \Exception("Invalid answer.");
+        }
+
+        $name = $attributes->getNamedItem("name")->nodeValue;
+
+        Cache::put("{$this->session_id}_{$name}", $answer);
+    }
+}
+
+// DB::connection('sqlite_cache')->table('cache')->where('key', 'like', 'test_%')->get();
 
 class UssdController extends Controller
 {
@@ -76,6 +92,64 @@ class UssdController extends Controller
     public function __construct()
     {
         $this->middleware('log:api');
+    }
+
+    public function walk($request, $xpath)
+    {
+        $pre = Cache::get("{$request->session_id}_pre");
+        $exp = Cache::get("{$request->session_id}_exp");
+        
+        Log::debug("Expressions", [
+            'pre' => $pre,
+            'exp' => $exp,
+        ]);
+
+        if($pre) {
+            $preNode = $xpath->query($pre)->item(0);
+
+            try {
+                if($preNode->tagName == 'question') {
+                    (new QuestionTag($request->session_id))->process($request->answer);
+                }
+            } catch(\Exception $ex) {
+                return response()->json([
+                    'flow' => self::FB, 
+                    'data' => $ex->getMessage(),
+                ]);
+            }
+        }
+
+        $node = $xpath->query($exp)->item(0);
+
+        try {
+            if($node->tagName == 'variable') {
+                $output = (new VariableTag($request->session_id))->handle($node->attributes);
+            } else if($node->tagName == 'question') {
+                $output = (new QuestionTag($request->session_id))->handle($node->attributes);
+            } else if($node->tagName == 'response') {
+                $output = (new ResponseTag($request->session_id))->handle($node->attributes);
+                throw new \Exception($output);
+            } else {
+                throw new \Exception("Unknown tag: {$node->tagName}");
+            }
+        } catch(\Exception $ex) {
+            return response()->json([
+                'flow' => self::FB, 
+                'data' => $ex->getMessage(),
+            ]);
+        }
+
+        $pre = $exp;
+        $exp = "/menus/menu[@name='customer']/*[2]"; // $exp + 1;
+
+        Cache::put("{$request->session_id}_pre", $pre);
+        Cache::put("{$request->session_id}_exp", $exp);
+
+        if(! $output) {
+            return $this->walk($request, $xpath);
+        }
+
+        return $output;
     }
     
     public function __invoke(Request $request): JsonResponse
@@ -89,14 +163,6 @@ class UssdController extends Controller
             // 'text' => 'nullable|string',
         ]);
 
-        $exp = "/menus/menu[@name='customer']/*";
-
-        if(! Cache::has("{$request->session_id}_exp")) {
-            Cache::put("{$request->session_id}_exp", $exp);
-        } else {
-            $exp = Cache::get("{$request->session_id}_exp");
-        }
-
         // ...
 
         $doc = new \DOMDocument();
@@ -105,26 +171,75 @@ class UssdController extends Controller
 
         $xpath = new \DOMXPath($doc);
 
-        $parser = new Parser($xpath, $exp);
+        // ...
 
-        $els = $xpath->query($exp);
+        $pre = '';
+        $exp = "/menus/menu[@name='customer']/*[1]";
 
-        dd($els);
+        if(! Cache::has("{$request->session_id}_exp")) {
+            Cache::put("{$request->session_id}_pre", $pre);
+            Cache::put("{$request->session_id}_exp", $exp);
+        }
+
+        $output = $this->walk($request, $xpath);
+
+        // else {
+        //     $pre = Cache::get("{$request->session_id}_pre");
+        //     $exp = Cache::get("{$request->session_id}_exp");
+        // }
+
+        // // ...
+
+        // if($pre) {
+        //     $preNode = $xpath->query($pre)->item(0);
+
+        //     try {
+        //         if($preNode->tagName == 'question') {
+        //             (new QuestionTag($request->session_id))->process($request->text);
+        //         }
+        //     } catch(\Exception $ex) {
+        //         return response()->json([
+        //             'flow' => self::FB, 
+        //             'data' => $ex->getMessage(),
+        //         ]);
+        //     }
+        // }
+
+        // $node = $xpath->query($exp)->item(0);
+
+        // try {
+        //     if($node->tagName == 'variable') {
+        //         $output = (new VariableTag($request->session_id))->handle($node->attributes);
+        //     } else if($node->tagName == 'question') {
+        //         $output = (new QuestionTag($request->session_id))->handle($node->attributes);
+        //     } else if($node->tagName == 'response') {
+        //         $output = (new ResponseTag($request->session_id))->handle($node->attributes);
+        //         throw new \Exception($output);
+        //     } else {
+        //         throw new \Exception("Unknown tag: {$node->tagName}");
+        //     }
+
+        //     if(! $output) {
+        //         $pre = $exp;
+        //         $exp = "/menus/menu[@name='customer']/*[2]"; // $exp + 1;
+
+        //         Cache::put("{$request->session_id}_pre", $pre);
+        //         Cache::put("{$request->session_id}_exp", $exp);
+
+
+        //     }
+        // } catch(\Exception $ex) {
+        //     return response()->json([
+        //         'flow' => self::FB, 
+        //         'data' => $ex->getMessage(),
+        //     ]);
+        // }
 
         // ...
 
-        // $answers = []; // [1, 2, 1];
-
-        // $parser->walk($answers);
-
-        // return response()->json([
-        //     'flow' => self::FC, 
-        //     'data' => "Gender\n1) Male\n2) Female\n0) Back",
-        // ]);
-
         return response()->json([
-            'flow' => self::FB, 
-            'data' => "You're request is being processed."
+            'flow' => self::FC, 
+            'data' => $output, // "Gender\n1) Male\n2) Female\n0) Back",
         ]);
     }
 
@@ -149,7 +264,7 @@ class UssdController extends Controller
         return response($ussdMachine->run());
     }
 
-    protected function lastInput(?string $input): ?string
+    protected function lastInput(?string $input) : ?string
     {
         if(! $input) {
             return $input;
