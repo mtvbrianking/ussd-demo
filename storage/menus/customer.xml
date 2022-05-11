@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <menus>
     <menu name="customer">
-        <!-- <variable name="color" value="blue"/> -->
+        <variable name="color" value="blue"/>
         <question name="username" text="Enter username: "/>
         <question name="password" text="Enter password: "/>
         <response text="End here..."/>

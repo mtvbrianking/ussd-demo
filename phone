@@ -88,7 +88,7 @@ def main():
 
         validate(response)
 
-        answer = input("\n" + response.json()['data']+ "\n")
+        answer = input("\n" + response.json()['data'] + "\n")
 
 if __name__ == '__main__':
     try:

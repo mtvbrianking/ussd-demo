@@ -27,7 +27,7 @@ class ResponseTag
 
     public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
     {
-        // ...
+        throw new \Exception("Expects no feedback.");
     }
 }
 
@@ -52,7 +52,7 @@ class VariableTag
 
     public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
     {
-        // ...
+        throw new \Exception("Expects no feedback.");
     }
 }
 
@@ -82,8 +82,6 @@ class QuestionTag
     }
 }
 
-// DB::connection('sqlite_cache')->table('cache')->where('key', 'like', 'test_%')->get();
-
 class UssdController extends Controller
 {
     const FC = 'continue';
@@ -91,58 +89,54 @@ class UssdController extends Controller
 
     public function __construct()
     {
-        // $this->middleware('log:api');
+        $this->middleware('log:api');
+    }
+
+    public function incExp(string $exp): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) { 
+            return ++$matches[1]; 
+        }, $exp);
+    }
+
+    public function decExp(string $exp): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) { 
+            return --$matches[1]; 
+        }, $exp);
     }
 
     public function walk($request, $xpath)
     {
         $pre = Cache::get("{$request->session_id}_pre");
         $exp = Cache::get("{$request->session_id}_exp");
-        
-        Log::debug("IN: ", ['pre' => $pre, 'exp' => $exp, 'req' => $request->all()]);
 
         if($pre) {
             $preNode = $xpath->query($pre)->item(0);
 
-            try {
-                if($preNode->tagName == 'question') {
-                    (new QuestionTag($request->session_id))->process($preNode->attributes, $request->answer);
-                }
-            } catch(\Exception $ex) {
-                return response()->json([
-                    'flow' => self::FB, 
-                    'data' => $ex->getMessage(),
-                ]);
+            if($preNode->tagName == 'question') {
+                (new QuestionTag($request->session_id))->process($preNode->attributes, $request->answer);
             }
         }
 
         $node = $xpath->query($exp)->item(0);
 
-        try {
-            if($node->tagName == 'variable') {
-                $output = (new VariableTag($request->session_id))->handle($node->attributes);
-            } else if($node->tagName == 'question') {
-                $output = (new QuestionTag($request->session_id))->handle($node->attributes);
-            } else if($node->tagName == 'response') {
-                $output = (new ResponseTag($request->session_id))->handle($node->attributes);
-                throw new \Exception($output);
-            } else {
-                throw new \Exception("Unknown tag: {$node->tagName}");
-            }
-        } catch(\Exception $ex) {
-            return response()->json([
-                'flow' => self::FB, 
-                'data' => $ex->getMessage(),
-            ]);
+        if($node->tagName == 'variable') {
+            $output = (new VariableTag($request->session_id))->handle($node->attributes);
+        } else if($node->tagName == 'question') {
+            $output = (new QuestionTag($request->session_id))->handle($node->attributes);
+        } else if($node->tagName == 'response') {
+            $output = (new ResponseTag($request->session_id))->handle($node->attributes);
+            throw new \Exception($output);
+        } else {
+            throw new \Exception("Unknown tag: {$node->tagName}");
         }
 
         $pre = $exp;
-        $exp = "/menus/menu[@name='customer']/*[2]"; // $exp + 1;
+        $exp = $this->incExp($exp);
 
         Cache::put("{$request->session_id}_pre", $pre);
         Cache::put("{$request->session_id}_exp", $exp);
-
-        Log::debug("OUT: ", ['pre' => $pre, 'exp' => $exp, 'req' => $request->all()]);
 
         if(! $output) {
             return $this->walk($request, $xpath);
@@ -170,6 +164,11 @@ class UssdController extends Controller
 
         $xpath = new \DOMXPath($doc);
 
+        // Exceptions 
+        // - file not found (missing xml file)
+        // - malformed xml (xmllinit)
+        // - invalid xml (xsd validation)
+
         // ...
 
         $pre = '';
@@ -180,67 +179,18 @@ class UssdController extends Controller
             Cache::put("{$request->session_id}_exp", $exp);
         }
 
-        // ddd(['pre' => $pre, 'exp' => $exp, 'req' => $request->all()]);
-
-        $output = $this->walk($request, $xpath);
-
-        // else {
-        //     $pre = Cache::get("{$request->session_id}_pre");
-        //     $exp = Cache::get("{$request->session_id}_exp");
-        // }
-
-        // // ...
-
-        // if($pre) {
-        //     $preNode = $xpath->query($pre)->item(0);
-
-        //     try {
-        //         if($preNode->tagName == 'question') {
-        //             (new QuestionTag($request->session_id))->process($request->text);
-        //         }
-        //     } catch(\Exception $ex) {
-        //         return response()->json([
-        //             'flow' => self::FB, 
-        //             'data' => $ex->getMessage(),
-        //         ]);
-        //     }
-        // }
-
-        // $node = $xpath->query($exp)->item(0);
-
-        // try {
-        //     if($node->tagName == 'variable') {
-        //         $output = (new VariableTag($request->session_id))->handle($node->attributes);
-        //     } else if($node->tagName == 'question') {
-        //         $output = (new QuestionTag($request->session_id))->handle($node->attributes);
-        //     } else if($node->tagName == 'response') {
-        //         $output = (new ResponseTag($request->session_id))->handle($node->attributes);
-        //         throw new \Exception($output);
-        //     } else {
-        //         throw new \Exception("Unknown tag: {$node->tagName}");
-        //     }
-
-        //     if(! $output) {
-        //         $pre = $exp;
-        //         $exp = "/menus/menu[@name='customer']/*[2]"; // $exp + 1;
-
-        //         Cache::put("{$request->session_id}_pre", $pre);
-        //         Cache::put("{$request->session_id}_exp", $exp);
-
-
-        //     }
-        // } catch(\Exception $ex) {
-        //     return response()->json([
-        //         'flow' => self::FB, 
-        //         'data' => $ex->getMessage(),
-        //     ]);
-        // }
-
-        // ...
+        try {
+            $output = $this->walk($request, $xpath);
+        } catch(\Exception $ex) {
+            return response()->json([
+                'flow' => self::FB, 
+                'data' => $ex->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'flow' => self::FC, 
-            'data' => $output, // "Gender\n1) Male\n2) Female\n0) Back",
+            'data' => $output,
         ]);
     }
 
