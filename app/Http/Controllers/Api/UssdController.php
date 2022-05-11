@@ -14,11 +14,11 @@ use Sparors\Ussd\Facades\Ussd;
 
 class ResponseTag
 {
-    protected $session_id;
+    protected $cache_key;
 
-    public function __construct($session_id)
+    public function __construct($cache_key)
     {
-        $this->session_id = $session_id;
+        $this->cache_key = $cache_key;
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -34,11 +34,11 @@ class ResponseTag
 
 class VariableTag
 {
-    protected $session_id;
+    protected $cache_key;
 
-    public function __construct($session_id)
+    public function __construct($cache_key)
     {
-        $this->session_id = $session_id;
+        $this->cache_key = $cache_key;
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -46,7 +46,7 @@ class VariableTag
         $name = $attributes->getNamedItem("name")->nodeValue;
         $value = $attributes->getNamedItem("value")->nodeValue;
 
-        Cache::put("{$this->session_id}_{$name}", $value);
+        Cache::put("{$this->cache_key}_{$name}", $value);
 
         return '';
     }
@@ -59,11 +59,11 @@ class VariableTag
 
 class QuestionTag
 {
-    protected $session_id;
+    protected $cache_key;
 
-    public function __construct($session_id)
+    public function __construct($cache_key)
     {
-        $this->session_id = $session_id;
+        $this->cache_key = $cache_key;
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -79,7 +79,7 @@ class QuestionTag
 
         $name = $attributes->getNamedItem("name")->nodeValue;
 
-        Cache::put("{$this->session_id}_{$name}", $answer);
+        Cache::put("{$this->cache_key}_{$name}", $answer);
     }
 }
 
@@ -112,32 +112,34 @@ class UssdController extends Controller
 
     public function walk($request, $xpath)
     {
-        $pre = $this->cache->get("{$request->session_id}_pre");
-        $exp = $this->cache->get("{$request->session_id}_exp");
+        $cache_key = "{$request->phone_number}_{$request->service_code}";
+
+        $pre = $this->cache->get("{$cache_key}_pre");
+        $exp = $this->cache->get("{$cache_key}_exp");
 
         if($pre) {
             $preNode = $xpath->query($pre)->item(0);
 
             if($preNode->tagName == 'question') {
-                (new QuestionTag($request->session_id))->process($preNode->attributes, $request->answer);
+                (new QuestionTag($cache_key))->process($preNode->attributes, $request->answer);
             }
         }
 
         $node = $xpath->query($exp)->item(0);
 
         if($node->tagName == 'variable') {
-            $output = (new VariableTag($request->session_id))->handle($node->attributes);
+            $output = (new VariableTag($cache_key))->handle($node->attributes);
         } else if($node->tagName == 'question') {
-            $output = (new QuestionTag($request->session_id))->handle($node->attributes);
+            $output = (new QuestionTag($cache_key))->handle($node->attributes);
         } else if($node->tagName == 'response') {
-            $output = (new ResponseTag($request->session_id))->handle($node->attributes);
+            $output = (new ResponseTag($cache_key))->handle($node->attributes);
             throw new \Exception($output);
         } else {
             throw new \Exception("Unknown tag: {$node->tagName}");
         }
 
-        $this->cache->put("{$request->session_id}_pre", $exp);
-        $this->cache->put("{$request->session_id}_exp", $this->incExp($exp));
+        $this->cache->put("{$cache_key}_pre", $exp);
+        $this->cache->put("{$cache_key}_exp", $this->incExp($exp));
 
         if(! $output) {
             return $this->walk($request, $xpath);
@@ -150,11 +152,11 @@ class UssdController extends Controller
     {
         $this->validate($request, [
             'session_id' => 'required|string',
-            // 'network_code' => 'nullable|string',
+            'network_code' => 'nullable|string',
             'phone_number' => 'required|string',
-            // 'input' => 'nullable',
-            // 'service_code' => 'required|string',
-            // 'text' => 'nullable|string',
+            'input' => 'nullable',
+            'service_code' => 'required|string',
+            'answer' => 'nullable|string',
         ]);
 
         // ...
@@ -174,13 +176,21 @@ class UssdController extends Controller
 
         // ...
 
-        $pre = '';
-        $exp = "/menus/menu[@name='customer']/*[1]";
+        $cache_key = "{$request->phone_number}_{$request->service_code}";
 
-        if(! $this->cache->has("{$request->session_id}_exp")) {
-            $this->cache->put("{$request->session_id}_pre", $pre);
-            $this->cache->put("{$request->session_id}_exp", $exp);
+        $preSessionId = $this->cache->get("{$cache_key}");
+
+        if($preSessionId != $request->session_id) {
+            // Flush previous session data
+            // $this->cache->flush("{$cache_key}");
+
+            $this->cache->put("{$cache_key}", $request->session_id);
+
+            $this->cache->put("{$cache_key}_pre", '');
+            $this->cache->put("{$cache_key}_exp", "/menus/menu[@name='customer']/*[1]");
         }
+
+        // ...
 
         try {
             $output = $this->walk($request, $xpath);
