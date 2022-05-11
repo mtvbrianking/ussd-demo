@@ -25,7 +25,7 @@ class ResponseTag
         return $attributes->getNamedItem("text")->nodeValue;
     }
 
-    public function process(?string $answer): void
+    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
     {
         // ...
     }
@@ -50,7 +50,7 @@ class VariableTag
         return '';
     }
 
-    public function process(?string $answer): void
+    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
     {
         // ...
     }
@@ -70,7 +70,7 @@ class QuestionTag
         return $attributes->getNamedItem("text")->nodeValue;
     }
 
-    public function process(?string $answer): void
+    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
     {
         if($answer == '') {
             throw new \Exception("Invalid answer.");
@@ -91,7 +91,7 @@ class UssdController extends Controller
 
     public function __construct()
     {
-        $this->middleware('log:api');
+        // $this->middleware('log:api');
     }
 
     public function walk($request, $xpath)
@@ -99,17 +99,14 @@ class UssdController extends Controller
         $pre = Cache::get("{$request->session_id}_pre");
         $exp = Cache::get("{$request->session_id}_exp");
         
-        Log::debug("Expressions", [
-            'pre' => $pre,
-            'exp' => $exp,
-        ]);
+        Log::debug("IN: ", ['pre' => $pre, 'exp' => $exp, 'req' => $request->all()]);
 
         if($pre) {
             $preNode = $xpath->query($pre)->item(0);
 
             try {
                 if($preNode->tagName == 'question') {
-                    (new QuestionTag($request->session_id))->process($request->answer);
+                    (new QuestionTag($request->session_id))->process($preNode->attributes, $request->answer);
                 }
             } catch(\Exception $ex) {
                 return response()->json([
@@ -145,6 +142,8 @@ class UssdController extends Controller
         Cache::put("{$request->session_id}_pre", $pre);
         Cache::put("{$request->session_id}_exp", $exp);
 
+        Log::debug("OUT: ", ['pre' => $pre, 'exp' => $exp, 'req' => $request->all()]);
+
         if(! $output) {
             return $this->walk($request, $xpath);
         }
@@ -154,7 +153,7 @@ class UssdController extends Controller
     
     public function __invoke(Request $request): JsonResponse
     {
-        $validated = $this->validate($request, [
+        $this->validate($request, [
             'session_id' => 'required|string',
             // 'network_code' => 'required|string',
             // 'phone_number' => 'required|string',
@@ -180,6 +179,8 @@ class UssdController extends Controller
             Cache::put("{$request->session_id}_pre", $pre);
             Cache::put("{$request->session_id}_exp", $exp);
         }
+
+        // ddd(['pre' => $pre, 'exp' => $exp, 'req' => $request->all()]);
 
         $output = $this->walk($request, $xpath);
 

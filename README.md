@@ -46,3 +46,19 @@ CON DummySACCO
 2.Loans
 3.Exit
 ```
+
+```bash
+jdoe@jdoe-pc:ussd-demo$ ./phone --dail *308#
+
+# DB::connection('sqlite_cache')->table('cache')->where('key', 'like', 'test_%')->get();
+
+curl -i http://localhost:8000/api \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"session_id":"10050","answer":""}'
+
+curl -i http://localhost:8000/api \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"session_id":"10050","answer":"jdoe"}'
+````

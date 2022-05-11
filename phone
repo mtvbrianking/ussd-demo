@@ -5,6 +5,7 @@ import argparse
 import requests
 import uuid
 import sys
+import os
 
 def ussd(url, body):
     try:
@@ -30,7 +31,7 @@ def validate(response):
         print(f'\n{data}')
         sys.exit(0);
 
-if __name__ == "__main__":
+def main():
 
     session_id = str(uuid.uuid4());
 
@@ -52,7 +53,7 @@ if __name__ == "__main__":
 
     dail = clean(args.dail)
 
-    answers = clean(dail.replace(service_code, ''))
+    answer = clean(dail.replace(service_code, ''))
 
     body = {
         'session_id': args.session_id,
@@ -60,7 +61,7 @@ if __name__ == "__main__":
         'phone_number': args.number,
         'input': dail,
         'service_code': service_code,
-        'answers': answers
+        'answer': answer
     }
 
     response = ussd(args.api_uri, body)
@@ -80,11 +81,21 @@ if __name__ == "__main__":
             'phone_number': args.number,
             'input': dail,
             'service_code': service_code,
-            'answers': answer
+            'answer': answer
         }
 
         response = ussd(args.api_uri, body)
 
         validate(response)
 
-        answer = input("\n" + response.text + "\n")
+        answer = input("\n" + response.json()['data']+ "\n")
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        print('Exiting...')
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
