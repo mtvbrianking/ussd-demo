@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Cache\Repository as CacheRepository;
+use Illuminate\Support\Facades\Storage;
 use Sparors\Ussd\Facades\Ussd;
 
 class ResponseTag
@@ -87,8 +88,11 @@ class UssdController extends Controller
     const FC = 'continue';
     const FB = 'break';
 
-    public function __construct()
+    protected CacheRepository $cache;
+
+    public function __construct(CacheRepository $cache)
     {
+        $this->cache = $cache;
         $this->middleware('log:api');
     }
 
@@ -108,8 +112,8 @@ class UssdController extends Controller
 
     public function walk($request, $xpath)
     {
-        $pre = Cache::get("{$request->session_id}_pre");
-        $exp = Cache::get("{$request->session_id}_exp");
+        $pre = $this->cache->get("{$request->session_id}_pre");
+        $exp = $this->cache->get("{$request->session_id}_exp");
 
         if($pre) {
             $preNode = $xpath->query($pre)->item(0);
@@ -132,11 +136,8 @@ class UssdController extends Controller
             throw new \Exception("Unknown tag: {$node->tagName}");
         }
 
-        $pre = $exp;
-        $exp = $this->incExp($exp);
-
-        Cache::put("{$request->session_id}_pre", $pre);
-        Cache::put("{$request->session_id}_exp", $exp);
+        $this->cache->put("{$request->session_id}_pre", $exp);
+        $this->cache->put("{$request->session_id}_exp", $this->incExp($exp));
 
         if(! $output) {
             return $this->walk($request, $xpath);
@@ -149,8 +150,8 @@ class UssdController extends Controller
     {
         $this->validate($request, [
             'session_id' => 'required|string',
-            // 'network_code' => 'required|string',
-            // 'phone_number' => 'required|string',
+            // 'network_code' => 'nullable|string',
+            'phone_number' => 'required|string',
             // 'input' => 'nullable',
             // 'service_code' => 'required|string',
             // 'text' => 'nullable|string',
@@ -160,23 +161,25 @@ class UssdController extends Controller
 
         $doc = new \DOMDocument();
 
-        $doc->load(storage_path('menus/customer.xml'));
+        if(Storage::disk('local')->missing('menus/customer.xml')) {
+            return response()->json([
+                'flow' => self::FB, 
+                'data' => "Missing menu files.",
+            ]);
+        }
+
+        $doc->load(Storage::disk('local')->path('menus/customer.xml'));
 
         $xpath = new \DOMXPath($doc);
-
-        // Exceptions 
-        // - file not found (missing xml file)
-        // - malformed xml (xmllinit)
-        // - invalid xml (xsd validation)
 
         // ...
 
         $pre = '';
         $exp = "/menus/menu[@name='customer']/*[1]";
 
-        if(! Cache::has("{$request->session_id}_exp")) {
-            Cache::put("{$request->session_id}_pre", $pre);
-            Cache::put("{$request->session_id}_exp", $exp);
+        if(! $this->cache->has("{$request->session_id}_exp")) {
+            $this->cache->put("{$request->session_id}_pre", $pre);
+            $this->cache->put("{$request->session_id}_exp", $exp);
         }
 
         try {
