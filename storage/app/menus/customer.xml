@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <menus>
     <menu name="customer">
-        <variable name="color" value="blue"/>
+        <!-- <variable name="color" value="blue"/>
         <question name="username" text="Enter username: "/>
         <question name="password" text="Enter password: "/>
         <response text="End here..."/>
-        <!-- <if key="color" value="blue">
+        <if key="color" value="blue">
             <response text="It's a boy"/>
-        </if>
-        <options header="Send Money">
+        </if> -->
+        <options header="Send Money" noback="True">
             <option text="Asia">
                 <options header="Asia">
                     <option text="China">
                         <options header="China">
                             <option text="Bank Transfer">
-                                <variable name="env" value="env"/>
-                                <question name="alias" text="EnterAlias"/>
-                                <dump text="Halted"/>
+                                <variable name="env" value="test"/>
+                                <question name="alias" text="EnterAlias: "/>
                                 <response text="AsiaChinaBankTransferComingSoon"/>
                             </option>
                             <option text="Ali Pay">
@@ -53,12 +52,11 @@
                     </option>
                 </options>
             </option>
-            <test arg="Argument" param="Parameter"/>
             <option text="Americas">
                 <response text="ComingSoon"/>
             </option>
         </options>
-        <options header="Account">
+        <!--<options header="Account">
             <response text="Testing"/>
         </options> -->
     </menu>

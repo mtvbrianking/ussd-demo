@@ -9,6 +9,7 @@ use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Cache\Repository as CacheRepository;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Sparors\Ussd\Facades\Ussd;
 
@@ -83,6 +84,85 @@ class QuestionTag
     }
 }
 
+class OptionsTag
+{
+    // use DOMXPath;
+
+    protected string $cache_key;
+    protected \DOMXPath $xpath;
+
+    public function __construct($cache_key, ?\DOMXPath $xpath)
+    {
+        $this->cache_key = $cache_key;
+        $this->xpath = $xpath;
+    }
+
+    public function decExp(string $exp): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) { 
+            return --$matches[1]; 
+        }, $exp);
+    }
+
+    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    {
+        $header = $attributes->getNamedItem("header")->nodeValue;
+
+        $body = '';
+
+        $exp = Cache::get("{$this->cache_key}_exp");
+
+        $OptionEls = $this->xpath->query("{$exp}/option");
+        
+        foreach ($OptionEls as $idx => $OptionEl) {
+            $pos = $idx + 1;
+            $body .= "\n{$pos}) " . $OptionEl->attributes->getNamedItem("text")->nodeValue;
+        }
+
+        if(! $attributes->getNamedItem("noback")) {
+            $body .= "\n0) Back";
+        }
+
+        return "{$header}{$body}";
+    }
+
+    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    {
+        if($answer == '') {
+            throw new \Exception("Invalid answer.");
+        }
+
+        $pre = Cache::get("{$this->cache_key}_pre");
+        $exp = Cache::get("{$this->cache_key}_exp");
+
+        if($answer == 0) {
+            if($attributes->getNamedItem("noback")) {
+                throw new \Exception("Invalid option.");
+            }
+
+            throw new \Exception("Not implemented.");
+
+            // $backExp = $this->decExp($exp);
+
+            // Cache::put("{$this->cache_key}_pre", $backExp);
+            // Cache::put("{$this->cache_key}_exp", $pre);
+
+            // Log::debug("\nPRE: {$pre}\nCUR: {$exp}\nBACK: {$backExp}");
+
+            return;
+        }
+
+        if((int) $answer > $this->xpath->query("{$pre}/option")->length) {
+            throw new \Exception("Invalid option.");
+        }
+
+        // Log::debug("\nPRE: {$pre}\nCUR: {$exp}\nNEXT: {$pre}/option[{$answer}]/*[1]");
+
+        Cache::put("{$this->cache_key}_pre", $exp);
+        Cache::put("{$this->cache_key}_exp", "{$pre}/option[{$answer}]/*[1]");
+    }
+}
+
 class UssdController extends Controller
 {
     const FC = 'continue';
@@ -93,7 +173,7 @@ class UssdController extends Controller
     public function __construct(CacheRepository $cache)
     {
         $this->cache = $cache;
-        $this->middleware('log:api');
+        // $this->middleware('log:api');
     }
 
     public function incExp(string $exp): string
@@ -115,15 +195,20 @@ class UssdController extends Controller
         $cache_key = "{$request->phone_number}_{$request->service_code}";
 
         $pre = $this->cache->get("{$cache_key}_pre");
-        $exp = $this->cache->get("{$cache_key}_exp");
 
         if($pre) {
             $preNode = $xpath->query($pre)->item(0);
 
             if($preNode->tagName == 'question') {
                 (new QuestionTag($cache_key))->process($preNode->attributes, $request->answer);
+            } else if($preNode->tagName == 'options') {
+                (new OptionsTag($cache_key, $xpath))->process($preNode->attributes, $request->answer);
             }
         }
+
+        $exp = $this->cache->get("{$cache_key}_exp");
+
+        // Log::debug("---> ", ['pre' => $pre, 'exp' => $exp]);
 
         $node = $xpath->query($exp)->item(0);
 
@@ -134,6 +219,8 @@ class UssdController extends Controller
         } else if($node->tagName == 'response') {
             $output = (new ResponseTag($cache_key))->handle($node->attributes);
             throw new \Exception($output);
+        } else if($node->tagName == 'options') {
+            $output = (new OptionsTag($cache_key, $xpath))->handle($node->attributes);
         } else {
             throw new \Exception("Unknown tag: {$node->tagName}");
         }
