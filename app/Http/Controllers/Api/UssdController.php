@@ -97,11 +97,27 @@ class OptionsTag
         $this->xpath = $xpath;
     }
 
-    public function decExp(string $exp): string
+    protected function stepBack(string $exp, $limit = 1): string
     {
+        $count = 0;
+
+        $exp = preg_replace_callback("|(\/option\[\d\]\/\*\[\d\])(?!.*[\/option\[\d\]\/\*\[\d\]])|", function($matches) { 
+            return ''; 
+        }, $exp, $limit, $count);
+
+        if($count > 0) {
+            return $exp;
+        }
+
+        preg_match('/(\d+)(?!.*\d)/', $exp, $matches);
+
+        if($matches[1] < 2) { // last possible step
+            return '';
+        }
+
         return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) { 
             return --$matches[1]; 
-        }, $exp);
+        }, $exp); 
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -140,14 +156,13 @@ class OptionsTag
                 throw new \Exception("Invalid option.");
             }
 
-            throw new \Exception("Not implemented.");
+            $exp = $this->stepBack($pre);
+            $pre = $this->stepBack($exp);
 
-            // $backExp = $this->decExp($exp);
+            Cache::put("{$this->cache_key}_pre", $pre);
+            Cache::put("{$this->cache_key}_exp", $exp);
 
-            // Cache::put("{$this->cache_key}_pre", $backExp);
-            // Cache::put("{$this->cache_key}_exp", $pre);
-
-            // Log::debug("\nPRE: {$pre}\nCUR: {$exp}\nBACK: {$backExp}");
+            // Log::debug("\nPRE: {$pre}\nEXP: {$exp}");
 
             return;
         }
@@ -211,6 +226,11 @@ class UssdController extends Controller
         // Log::debug("---> ", ['pre' => $pre, 'exp' => $exp]);
 
         $node = $xpath->query($exp)->item(0);
+
+        if(! $node) {
+            // there are no tags -- should have exited before this...
+            throw new \Exception("Missing tag");    
+        }
 
         if($node->tagName == 'variable') {
             $output = (new VariableTag($cache_key))->handle($node->attributes);
