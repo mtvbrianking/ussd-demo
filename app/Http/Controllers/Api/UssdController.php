@@ -9,6 +9,7 @@ use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Cache\Repository as CacheRepository;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Sparors\Ussd\Facades\Ussd;
@@ -22,8 +23,27 @@ class ResponseTag
         $this->cache_key = $cache_key;
     }
 
+    protected function incExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] + $step; 
+        }, $exp);
+    }
+
+    protected function decExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] - $step; 
+        }, $exp);
+    }
+
     public function handle(\DOMNamedNodeMap $attributes) : ?string
     {
+        $exp = Cache::get("{$this->cache_key}_exp");
+
+        Cache::put("{$this->cache_key}_pre", $exp);
+        Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+
         return $attributes->getNamedItem("text")->nodeValue;
     }
 
@@ -42,12 +62,31 @@ class VariableTag
         $this->cache_key = $cache_key;
     }
 
+    protected function incExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] + $step; 
+        }, $exp);
+    }
+
+    protected function decExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] - $step; 
+        }, $exp);
+    }
+
     public function handle(\DOMNamedNodeMap $attributes) : ?string
     {
         $name = $attributes->getNamedItem("name")->nodeValue;
         $value = $attributes->getNamedItem("value")->nodeValue;
 
         Cache::put("{$this->cache_key}_{$name}", $value);
+
+        $exp = Cache::get("{$this->cache_key}_exp");
+
+        Cache::put("{$this->cache_key}_pre", $exp);
+        Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
 
         return '';
     }
@@ -67,8 +106,27 @@ class QuestionTag
         $this->cache_key = $cache_key;
     }
 
+    protected function incExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] + $step; 
+        }, $exp);
+    }
+
+    protected function decExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] - $step; 
+        }, $exp);
+    }
+
     public function handle(\DOMNamedNodeMap $attributes) : ?string
     {
+        $exp = Cache::get("{$this->cache_key}_exp");
+
+        Cache::put("{$this->cache_key}_pre", $exp);
+        Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+
         return $attributes->getNamedItem("text")->nodeValue;
     }
 
@@ -86,8 +144,6 @@ class QuestionTag
 
 class OptionsTag
 {
-    // use DOMXPath;
-
     protected string $cache_key;
     protected \DOMXPath $xpath;
 
@@ -97,7 +153,21 @@ class OptionsTag
         $this->xpath = $xpath;
     }
 
-    protected function stepBack(string $exp, $limit = 1): string
+    protected function incExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] + $step; 
+        }, $exp);
+    }
+
+    protected function decExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] - $step; 
+        }, $exp);
+    }
+
+    protected function stepBack(string $exp, $limit = 1, $step = 1): string
     {
         $count = 0;
 
@@ -115,8 +185,8 @@ class OptionsTag
             return '';
         }
 
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) { 
-            return --$matches[1]; 
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] - $step; 
         }, $exp); 
     }
 
@@ -138,6 +208,9 @@ class OptionsTag
         if(! $attributes->getNamedItem("noback")) {
             $body .= "\n0) Back";
         }
+
+        Cache::put("{$this->cache_key}_pre", $exp);
+        Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
 
         return "{$header}{$body}";
     }
@@ -176,32 +249,27 @@ class OptionsTag
 
 class IfTag
 {
-    protected $cache_key;
+    protected string $cache_key;
+    protected \DOMXPath $xpath;
 
-    public function __construct($cache_key)
+    public function __construct($cache_key, ?\DOMXPath $xpath)
     {
         $this->cache_key = $cache_key;
+        $this->xpath = $xpath;
     }
 
-    public function decExp(string $exp): string
+    protected function incExp(string $exp, int $step = 1): string
     {
-        $count = 0;
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] + $step; 
+        }, $exp);
+    }
 
-        $exp = preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) { 
-            return --$matches[1]; 
-        }, $exp, 1, $count);
-
-        return $exp;
-
-        // if($count > 0) {
-        //     return $exp;
-        // }
-
-        // preg_match('/(\d+)(?!.*\d)/', $exp, $matches); // match last [0] then return ''
-
-        // if($matches[1] < 2) { // last possible step
-        //     return '';
-        // }
+    protected function decExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] - $step; 
+        }, $exp);
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -210,18 +278,30 @@ class IfTag
         $value = $attributes->getNamedItem("value")->nodeValue;
 
         if(Cache::get("{$this->cache_key}_{$key}") != $value) {
+            $exp = Cache::get("{$this->cache_key}_exp");
+
+            Cache::put("{$this->cache_key}_pre", $exp);
+            Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+
             return '';
         }
 
+        // Log::debug("----------------------------------------------------------------");
+
         $pre = Cache::get("{$this->cache_key}_pre");
         $exp = Cache::get("{$this->cache_key}_exp");
+        $break = Cache::get("{$this->cache_key}_break");
+        $resume = Cache::get("{$this->cache_key}_resume");
 
-        Log::debug("---> ", ['pre' => $pre, 'exp' => $exp]);
+        // Log::debug("---> ", ['pre' => $pre, 'exp' => $exp, 'break' => $break, 'resume' => $resume]);
 
         Cache::put("{$this->cache_key}_pre", $exp);
         Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");
+        $no_of_tags = $this->xpath->query("{$exp}/*")->length;
+        Cache::put("{$this->cache_key}_break", $this->incExp("{$exp}/*[1]", $no_of_tags));
+        Cache::put("{$this->cache_key}_resume", $this->incExp($exp));
 
-        Log::debug("<--- ", ['pre' => $exp, 'exp' => "{$exp}/*[1]"]);
+        // Log::debug("<--- ", ['pre' => $exp, 'exp' => "{$exp}/*[1]", 'break' => $this->incExp("{$exp}/*[1]", $no_of_tags), 'resume' => $this->incExp($exp)]);
 
         return '';
     }
@@ -245,20 +325,6 @@ class UssdController extends Controller
         // $this->middleware('log:api');
     }
 
-    public function incExp(string $exp): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) { 
-            return ++$matches[1]; 
-        }, $exp);
-    }
-
-    public function decExp(string $exp): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) { 
-            return --$matches[1]; 
-        }, $exp);
-    }
-
     public function walk($request, $xpath)
     {
         $cache_key = "{$request->phone_number}_{$request->service_code}";
@@ -277,7 +343,7 @@ class UssdController extends Controller
 
         $exp = $this->cache->get("{$cache_key}_exp");
 
-        // Log::debug("walk --> ", ['pre' => $pre, 'exp' => $exp]);
+        // Log::debug("**** ", ['pre' => $pre, 'exp' => $exp]);
 
         $node = $xpath->query($exp)->item(0);
 
@@ -296,15 +362,32 @@ class UssdController extends Controller
         } else if($node->tagName == 'options') {
             $output = (new OptionsTag($cache_key, $xpath))->handle($node->attributes);
         } else if($node->tagName == 'if') {
-            $output = (new IfTag($cache_key))->handle($node->attributes);
+            $output = (new IfTag($cache_key, $xpath))->handle($node->attributes);
         } else {
             throw new \Exception("Unknown tag: {$node->tagName}");
         }
 
-        $this->cache->put("{$cache_key}_pre", $exp);
-        $this->cache->put("{$cache_key}_exp", $this->incExp($exp));
+        // $this->cache->put("{$cache_key}_pre", $exp);
+        // $this->cache->put("{$cache_key}_exp", $this->incExp($exp));
 
-        Log::debug("==== ", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
+        // Log::debug("==== ", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
+
+        // $pre = $this->cache->get("{$cache_key}_pre");
+        $exp = $this->cache->get("{$cache_key}_exp");
+        $break = $this->cache->get("{$cache_key}_break");
+
+        // Log::debug("\nCheck", ['pre' => $pre, 'exp' => $exp, 'break' => $break, 'resume' => $resume]);
+
+        // Log::debug("--------------- {$exp} == {$break}");
+
+        if($break && $exp == $break) {
+            // $this->cache->put("{$cache_key}_pre", $pre);
+            $resume = $this->cache->get("{$cache_key}_resume");
+
+            $this->cache->put("{$cache_key}_exp", $resume);
+            $this->cache->put("{$cache_key}_break", '');
+            $this->cache->put("{$cache_key}_resume", '');
+        }
 
         if(! $output) {
             return $this->walk($request, $xpath);
@@ -332,6 +415,7 @@ class UssdController extends Controller
             return response()->json([
                 'flow' => self::FB, 
                 'data' => "Missing menu files.",
+                'session_id' => $request->session_id,
             ]);
         }
 
@@ -343,19 +427,36 @@ class UssdController extends Controller
 
         $cache_key = "{$request->phone_number}_{$request->service_code}";
 
-        $preSessionId = $this->cache->get("{$cache_key}");
+        $preSessionId = $this->cache->get("{$cache_key}_session_id");
+
+        // return response()->json(['flow' => self::FB, 'data' => "'{$preSessionId}' && '{$preSessionId}' != '{$request->session_id}'"]);
+
+        // $data = DB::connection('sqlite_cache')->table('cache')->select(['key', 'value'])->where('key', 'like', "{$cache_key}_%")->get();
+
+        // Log::debug('data', $data->toArray());
 
         if($preSessionId != $request->session_id) {
-            // Flush previous session data
-            // $this->cache->flush("{$cache_key}");
+            if($preSessionId != '') {
+                $affected = DB::connection('sqlite_cache')->table('cache')->where('key', 'like', "{$cache_key}_%")->delete();
 
-            $this->cache->put("{$cache_key}", $request->session_id);
+                // return response()->json(['flow' => self::FB, 'data' => "{$cache_key}_% => {$affected}"]);
+            }
+
+            $this->cache->put("{$cache_key}_session_id", $request->session_id);
 
             $this->cache->put("{$cache_key}_pre", '');
             $this->cache->put("{$cache_key}_exp", "/menus/menu[@name='customer']/*[1]");
+            $this->cache->put("{$cache_key}_break", '');
+            $this->cache->put("{$cache_key}_resume", '');
         }
 
+        // $sessionId = $this->cache->get("{$cache_key}_session_id");
+
+        // return response()->json(['flow' => self::FB, 'data' => "'{$sessionId}'"]);
+
         // ...
+
+        $session_id = $this->cache->get("{$cache_key}_session_id");
 
         try {
             $output = $this->walk($request, $xpath);
@@ -363,12 +464,14 @@ class UssdController extends Controller
             return response()->json([
                 'flow' => self::FB, 
                 'data' => $ex->getMessage(),
+                'session_id' => $session_id,
             ]);
         }
 
         return response()->json([
             'flow' => self::FC, 
             'data' => $output,
+            'session_id' => $session_id,
         ]);
     }
 
