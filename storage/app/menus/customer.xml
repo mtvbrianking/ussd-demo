@@ -4,11 +4,18 @@
         <!-- <variable name="color" value="blue"/>
         <question name="username" text="Enter username: "/>
         <question name="password" text="Enter password: "/>
-        <response text="End here..."/>
-        <if key="color" value="blue">
-            <response text="It's a boy"/>
-        </if> -->
-        <options header="Send Money" noback="True">
+        <response text="End here..."/> -->
+
+        <variable name="ask-qns" value="yes"/>
+
+        <if key="ask-qns" value="yes">
+            <question name="username" text="Enter username: "/>
+            <question name="password" text="Enter password: "/>
+        </if>
+
+        <response text="ExitPrompt"/>
+
+        <!-- <options header="Send Money" noback="True">
             <option text="Asia">
                 <options header="Asia">
                     <option text="China">
@@ -55,7 +62,7 @@
             <option text="Americas">
                 <response text="ComingSoon"/>
             </option>
-        </options>
+        </options> -->
         <!--<options header="Account">
             <response text="Testing"/>
         </options> -->

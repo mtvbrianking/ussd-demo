@@ -162,8 +162,6 @@ class OptionsTag
             Cache::put("{$this->cache_key}_pre", $pre);
             Cache::put("{$this->cache_key}_exp", $exp);
 
-            // Log::debug("\nPRE: {$pre}\nEXP: {$exp}");
-
             return;
         }
 
@@ -171,10 +169,66 @@ class OptionsTag
             throw new \Exception("Invalid option.");
         }
 
-        // Log::debug("\nPRE: {$pre}\nCUR: {$exp}\nNEXT: {$pre}/option[{$answer}]/*[1]");
-
         Cache::put("{$this->cache_key}_pre", $exp);
         Cache::put("{$this->cache_key}_exp", "{$pre}/option[{$answer}]/*[1]");
+    }
+}
+
+class IfTag
+{
+    protected $cache_key;
+
+    public function __construct($cache_key)
+    {
+        $this->cache_key = $cache_key;
+    }
+
+    public function decExp(string $exp): string
+    {
+        $count = 0;
+
+        $exp = preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) { 
+            return --$matches[1]; 
+        }, $exp, 1, $count);
+
+        return $exp;
+
+        // if($count > 0) {
+        //     return $exp;
+        // }
+
+        // preg_match('/(\d+)(?!.*\d)/', $exp, $matches); // match last [0] then return ''
+
+        // if($matches[1] < 2) { // last possible step
+        //     return '';
+        // }
+    }
+
+    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    {
+        $key = $attributes->getNamedItem("key")->nodeValue;
+        $value = $attributes->getNamedItem("value")->nodeValue;
+
+        if(Cache::get("{$this->cache_key}_{$key}") != $value) {
+            return '';
+        }
+
+        $pre = Cache::get("{$this->cache_key}_pre");
+        $exp = Cache::get("{$this->cache_key}_exp");
+
+        Log::debug("---> ", ['pre' => $pre, 'exp' => $exp]);
+
+        Cache::put("{$this->cache_key}_pre", $exp);
+        Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");
+
+        Log::debug("<--- ", ['pre' => $exp, 'exp' => "{$exp}/*[1]"]);
+
+        return '';
+    }
+
+    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    {
+        throw new \Exception("Expects no feedback.");
     }
 }
 
@@ -223,7 +277,7 @@ class UssdController extends Controller
 
         $exp = $this->cache->get("{$cache_key}_exp");
 
-        // Log::debug("---> ", ['pre' => $pre, 'exp' => $exp]);
+        // Log::debug("walk --> ", ['pre' => $pre, 'exp' => $exp]);
 
         $node = $xpath->query($exp)->item(0);
 
@@ -241,12 +295,16 @@ class UssdController extends Controller
             throw new \Exception($output);
         } else if($node->tagName == 'options') {
             $output = (new OptionsTag($cache_key, $xpath))->handle($node->attributes);
+        } else if($node->tagName == 'if') {
+            $output = (new IfTag($cache_key))->handle($node->attributes);
         } else {
             throw new \Exception("Unknown tag: {$node->tagName}");
         }
 
         $this->cache->put("{$cache_key}_pre", $exp);
         $this->cache->put("{$cache_key}_exp", $this->incExp($exp));
+
+        Log::debug("==== ", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
 
         if(! $output) {
             return $this->walk($request, $xpath);
