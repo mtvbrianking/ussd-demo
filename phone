@@ -11,9 +11,11 @@ def ussd(url, body):
     try:
         return requests.post(url, json=body, headers={'Accept': 'application/json'})
     except HTTPError as http_err:
-        print(f'HTTP error occurred: {http_err}')
-    except Exception as err:
-        print(f'Other error occurred: {err}')
+        print(http_err)
+        sys.exit(0);
+    except Exception as ex:
+        print(ex)
+        sys.exit(0);
 
 def clean(ussdCode):
     return ussdCode.lstrip('*').rstrip('#')
