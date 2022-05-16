@@ -38,35 +38,35 @@ def main():
     session_id = str(uuid.uuid4());
 
     parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('phone_number', action="store", help="MSISDN")
-    parser.add_argument('--dail', help="User request", type=str, default="", metavar='')
-    parser.add_argument('--service_code', help="USSD shortcode", type=str, default="*308#", metavar='')
-    parser.add_argument('--network_code', help="Network code", type=str, default="6001", metavar='')
-    parser.add_argument('--session_id', help="Session ID - Auto Generated UUID", type=str, default="", metavar='')
-    parser.add_argument('--api_uri', help="API URI", type=str, default="http://localhost:8000/api", metavar='')
-    parser.add_argument('--version', action='version', version='%(prog)s v1.0 by bmatovu', help="Show program's info")
-    parser.add_argument('--help', action='help', default=argparse.SUPPRESS, help='Show usage')
+    parser.add_argument('phone', action="store", help="MSISDN")
+    parser.add_argument('--dail', help="User request", type=str, default="*308#", metavar='')
+    parser.add_argument('--service', help="USSD shortcode", type=str, default="*308#", metavar='')
+    parser.add_argument('--network', help="Network code", type=str, default="6001", metavar='')
+    parser.add_argument('--session', help="Session ID *Auto Generated", type=str, default="", metavar='')
+    parser.add_argument('--api', help="API URI", type=str, default="http://localhost:8000/api", metavar='')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s v1.0 by bmatovu', help="Show program's info")
+    parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS, help='Show usage')
 
     args = parser.parse_args()
 
     # ........................................................
 
-    service_code = clean(args.service_code)
+    service = clean(args.service)
 
-    dail = service_code if args.dail == '' else clean(args.dail)
+    dail = service if args.dail == '' else clean(args.dail)
 
-    answer = clean(dail.replace(service_code, ''))
+    answer = clean(dail.replace(service, ''))
 
     body = {
         'session_id': session_id,
-        'network_code': args.network_code,
-        'phone_number': args.phone_number,
+        'network_code': args.network,
+        'phone_number': args.phone,
         'input': dail,
-        'service_code': service_code,
+        'service_code': service,
         'answer': answer
     }
 
-    response = ussd(args.api_uri, body)
+    response = ussd(args.api, body)
 
     validate(response)
 
@@ -77,16 +77,10 @@ def main():
     while True:
         dail += "*" + answer
 
-        body = {
-            'session_id': session_id,
-            'network_code': args.network_code,
-            'phone_number': args.phone_number,
-            'input': dail,
-            'service_code': service_code,
-            'answer': answer
-        }
+        body['input'] = dail
+        body['answer'] = answer
 
-        response = ussd(args.api_uri, body)
+        response = ussd(args.api, body)
 
         validate(response)
 
