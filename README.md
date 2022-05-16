@@ -48,9 +48,10 @@ CON DummySACCO
 ```
 
 ```bash
-jdoe@jdoe-pc:ussd-demo$ ./phone --dail *308#
-
-# DB::connection('sqlite_cache')->table('cache')->where('key', 'like', 'test_%')->get();
+./phone --help
+./phone 0786352836
+./phone 0786352836 --dail *308#
+./phone 0786352836 --dail *308*1*2#
 
 curl -i http://localhost:8000/api \
   -H 'Accept: application/json' \
