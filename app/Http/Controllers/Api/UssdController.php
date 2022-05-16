@@ -291,17 +291,23 @@ class IfTag
         $pre = Cache::get("{$this->cache_key}_pre");
         $exp = Cache::get("{$this->cache_key}_exp");
         $break = Cache::get("{$this->cache_key}_break");
+        $breakpoints = json_decode(Cache::get("{$this->cache_key}_breakpoints"), true);
         $resume = Cache::get("{$this->cache_key}_resume");
 
         // Log::debug("---> ", ['pre' => $pre, 'exp' => $exp, 'break' => $break, 'resume' => $resume]);
 
         Cache::put("{$this->cache_key}_pre", $exp);
         Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");
-        $no_of_tags = $this->xpath->query("{$exp}/*")->length;
-        Cache::put("{$this->cache_key}_break", $this->incExp("{$exp}/*[1]", $no_of_tags));
-        Cache::put("{$this->cache_key}_resume", $this->incExp($exp));
 
-        // Log::debug("<--- ", ['pre' => $exp, 'exp' => "{$exp}/*[1]", 'break' => $this->incExp("{$exp}/*[1]", $no_of_tags), 'resume' => $this->incExp($exp)]);
+        $no_of_tags = $this->xpath->query("{$exp}/*")->length;
+        $break = $this->incExp("{$exp}/*[1]", $no_of_tags);
+        $resume = $this->incExp($exp);
+        array_unshift($breakpoints, [$break => $resume]);
+        Cache::put("{$this->cache_key}_break", $break);
+        Cache::put("{$this->cache_key}_breakpoints", json_encode($breakpoints));
+        Cache::put("{$this->cache_key}_resume", $resume);
+
+        // Log::debug("<--- ", ['pre' => $exp, 'exp' => "{$exp}/*[1]", 'break' => $break, 'resume' => $resume]);
 
         return '';
     }
@@ -341,6 +347,29 @@ class UssdController extends Controller
             }
         }
 
+        // ...........................................................................
+
+        // // $pre = $this->cache->get("{$cache_key}_pre");
+        // $exp = $this->cache->get("{$cache_key}_exp");
+        // $break = $this->cache->get("{$cache_key}_break");
+        // $resume = $this->cache->get("{$cache_key}_resume"); // ...
+        // $breakpoints = json_decode($this->cache->get("{$cache_key}_breakpoints"), true);
+
+        // // Log::debug("\nCheck", ['pre' => $pre, 'exp' => $exp, 'break' => $break, 'resume' => $resume, 'breakpoints' => $breakpoints]);
+
+        // // Log::debug("{$exp} == {$break}");
+
+        // if($breakpoints && isset($breakpoints[0][$exp])) {
+        //     // Log::debug($exp, $breakpoints);
+        //     $breakpoint = array_shift($breakpoints);
+        //     $this->cache->put("{$cache_key}_exp", $breakpoint[$exp]);
+        //     $this->cache->put("{$cache_key}_break", '');
+        //     $this->cache->put("{$cache_key}_breakpoints", json_encode($breakpoints));
+        //     $this->cache->put("{$cache_key}_resume", '');
+        // }
+
+        // ...........................................................................
+
         $exp = $this->cache->get("{$cache_key}_exp");
 
         // Log::debug("**** ", ['pre' => $pre, 'exp' => $exp]);
@@ -348,8 +377,28 @@ class UssdController extends Controller
         $node = $xpath->query($exp)->item(0);
 
         if(! $node) {
-            // there are no tags -- should have exited before this...
-            throw new \Exception("Missing tag");    
+            Log::debug("OUT ---> {$exp}");
+
+            // $pre = $this->cache->get("{$cache_key}_pre");
+            $exp = $this->cache->get("{$cache_key}_exp");
+            $break = $this->cache->get("{$cache_key}_break");
+            $resume = $this->cache->get("{$cache_key}_resume"); // ...
+            $breakpoints = json_decode($this->cache->get("{$cache_key}_breakpoints"), true);
+
+            if(! $breakpoints || ! isset($breakpoints[0][$exp])) {
+                throw new \Exception("Missing tag");
+            }
+
+            // Log::debug($exp, $breakpoints);
+            $breakpoint = array_shift($breakpoints);
+            $this->cache->put("{$cache_key}_exp", $breakpoint[$exp]);
+            $this->cache->put("{$cache_key}_break", '');
+            $this->cache->put("{$cache_key}_breakpoints", json_encode($breakpoints));
+            $this->cache->put("{$cache_key}_resume", '');
+
+            $exp = $this->cache->get("{$cache_key}_exp");
+
+            $node = $xpath->query($exp)->item(0);
         }
 
         if($node->tagName == 'variable') {
@@ -375,19 +424,31 @@ class UssdController extends Controller
         // $pre = $this->cache->get("{$cache_key}_pre");
         $exp = $this->cache->get("{$cache_key}_exp");
         $break = $this->cache->get("{$cache_key}_break");
+        $resume = $this->cache->get("{$cache_key}_resume"); // ...
+        $breakpoints = json_decode($this->cache->get("{$cache_key}_breakpoints"), true);
 
-        // Log::debug("\nCheck", ['pre' => $pre, 'exp' => $exp, 'break' => $break, 'resume' => $resume]);
+        // Log::debug("\nCheck", ['pre' => $pre, 'exp' => $exp, 'break' => $break, 'resume' => $resume, 'breakpoints' => $breakpoints]);
 
-        // Log::debug("--------------- {$exp} == {$break}");
+        // Log::debug("{$exp} == {$break}");
 
-        if($break && $exp == $break) {
-            // $this->cache->put("{$cache_key}_pre", $pre);
-            $resume = $this->cache->get("{$cache_key}_resume");
-
-            $this->cache->put("{$cache_key}_exp", $resume);
+        if($breakpoints && isset($breakpoints[0][$exp])) {
+            // Log::debug($exp, $breakpoints);
+            $breakpoint = array_shift($breakpoints);
+            $this->cache->put("{$cache_key}_exp", $breakpoint[$exp]);
             $this->cache->put("{$cache_key}_break", '');
+            $this->cache->put("{$cache_key}_breakpoints", json_encode($breakpoints));
             $this->cache->put("{$cache_key}_resume", '');
         }
+
+        // if($break && $exp == $break) {
+        //     // $this->cache->put("{$cache_key}_pre", $pre);
+        //     $resume = $this->cache->get("{$cache_key}_resume");
+
+        //     $this->cache->put("{$cache_key}_exp", $resume);
+        //     $this->cache->put("{$cache_key}_break", '');
+        //     $this->cache->put("{$cache_key}_breakpoints", "[]");
+        //     $this->cache->put("{$cache_key}_resume", '');
+        // }
 
         if(! $output) {
             return $this->walk($request, $xpath);
@@ -447,6 +508,7 @@ class UssdController extends Controller
             $this->cache->put("{$cache_key}_pre", '');
             $this->cache->put("{$cache_key}_exp", "/menus/menu[@name='customer']/*[1]");
             $this->cache->put("{$cache_key}_break", '');
+            $this->cache->put("{$cache_key}_breakpoints", "[]");
             $this->cache->put("{$cache_key}_resume", '');
         }
 

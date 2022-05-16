@@ -16,10 +16,11 @@
         <variable name="ask-username" value="yes"/>
         <if key="ask-username" value="yes">
             <question name="username" text="Enter username: "/>
-            <!-- <variable name="ask-password" value="yes"/>
+            <variable name="ask-password" value="yes"/>
             <if key="ask-password" value="yes">
-                <question name="username" text="Enter username: "/>
-            </if> -->
+                <question name="password" text="Enter password: "/>
+            </if>
+            <!-- <question name="greet" text="Say hi: "/> -->
         </if>
         <response text="ExitPrompt"/>
 
