@@ -39,10 +39,15 @@ class ResponseTag
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
     {
+        $pre = Cache::get("{$this->cache_key}_pre");
         $exp = Cache::get("{$this->cache_key}_exp");
+
+        Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
         Cache::put("{$this->cache_key}_pre", $exp);
         Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+
+        Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
 
         return $attributes->getNamedItem("text")->nodeValue;
     }
@@ -83,10 +88,15 @@ class VariableTag
 
         Cache::put("{$this->cache_key}_{$name}", $value);
 
+        $pre = Cache::get("{$this->cache_key}_pre");
         $exp = Cache::get("{$this->cache_key}_exp");
+
+        Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
         Cache::put("{$this->cache_key}_pre", $exp);
         Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+
+        Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
 
         return '';
     }
@@ -122,10 +132,15 @@ class QuestionTag
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
     {
+        $pre = Cache::get("{$this->cache_key}_pre");
         $exp = Cache::get("{$this->cache_key}_exp");
+
+        Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
         Cache::put("{$this->cache_key}_pre", $exp);
         Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+
+        Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
 
         return $attributes->getNamedItem("text")->nodeValue;
     }
@@ -171,23 +186,26 @@ class OptionsTag
     {
         $count = 0;
 
-        $exp = preg_replace_callback("|(\/option\[\d\]\/\*\[\d\])(?!.*[\/option\[\d\]\/\*\[\d\]])|", function($matches) { 
+        // (\/option\[\d\]\/\*\[\d\])(?!.*[\/option\[\d\]\/\*\[\d\]])
+        $exp = preg_replace_callback("|(\/\*\[\d\])(?!.\*\[\d\])|", function($matches) { 
             return ''; 
         }, $exp, $limit, $count);
 
-        if($count > 0) {
-            return $exp;
-        }
+        return $exp;
 
-        preg_match('/(\d+)(?!.*\d)/', $exp, $matches);
+        // if($count > 0) {
+        //     return $exp;
+        // }
 
-        if($matches[1] < 2) { // last possible step
-            return '';
-        }
+        // preg_match('/(\d+)(?!.*\d)/', $exp, $matches);
 
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] - $step; 
-        }, $exp); 
+        // if($matches[1] < 2) { // last possible step
+        //     return '';
+        // }
+
+        // return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+        //     return $matches[1] - $step; 
+        // }, $exp); 
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -196,7 +214,10 @@ class OptionsTag
 
         $body = '';
 
+        $pre = Cache::get("{$this->cache_key}_pre");
         $exp = Cache::get("{$this->cache_key}_exp");
+
+        Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
         $OptionEls = $this->xpath->query("{$exp}/option");
         
@@ -211,6 +232,7 @@ class OptionsTag
 
         Cache::put("{$this->cache_key}_pre", $exp);
         Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+        Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
 
         return "{$header}{$body}";
     }
@@ -224,6 +246,8 @@ class OptionsTag
         $pre = Cache::get("{$this->cache_key}_pre");
         $exp = Cache::get("{$this->cache_key}_exp");
 
+        Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
+
         if($answer == 0) {
             if($attributes->getNamedItem("noback")) {
                 throw new \Exception("Invalid option.");
@@ -231,6 +255,8 @@ class OptionsTag
 
             $exp = $this->stepBack($pre);
             $pre = $this->stepBack($exp);
+
+            Log::debug("BP      -->", ['pre' => $pre, 'exp' => $exp]);
 
             Cache::put("{$this->cache_key}_pre", $pre);
             Cache::put("{$this->cache_key}_exp", $exp);
@@ -242,8 +268,71 @@ class OptionsTag
             throw new \Exception("Invalid option.");
         }
 
+        // Cache::put("{$this->cache_key}_pre", $exp);
+        Cache::put("{$this->cache_key}_exp", "{$pre}/*[{$answer}]");
+        // Cache::put("{$this->cache_key}_exp", "{$pre}/*[{$answer}]/*[1]"); // into the option
+        // Cache::put("{$this->cache_key}_exp", "{$pre}/option[{$answer}]/*[1]");
+        Log::debug("CheckOut -->", ['pre' => $pre, 'exp' => "{$pre}/*[{$answer}]"]);
+
+        // Cache::put("{$this->cache_key}_pre", $pre);
+        // Cache::put("{$this->cache_key}_exp", "{$exp}/*[{$answer}]");
+
+        // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => "{$exp}/*[{$answer}]"]);
+    }
+}
+
+class OptionTag
+{
+    protected string $cache_key;
+    protected \DOMXPath $xpath;
+
+    public function __construct($cache_key, ?\DOMXPath $xpath)
+    {
+        $this->cache_key = $cache_key;
+        $this->xpath = $xpath;
+    }
+
+    protected function incExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] + $step; 
+        }, $exp);
+    }
+
+    protected function decExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] - $step; 
+        }, $exp);
+    }
+
+    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    {
+        $pre = Cache::get("{$this->cache_key}_pre");
+        $exp = Cache::get("{$this->cache_key}_exp");
+        $breakpoints = json_decode(Cache::get("{$this->cache_key}_breakpoints"), true);
+
+        Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
+
+        $no_of_tags = $this->xpath->query("{$exp}/*")->length;
+        $break = $this->incExp("{$exp}/*[1]", $no_of_tags);
+
+        array_unshift($breakpoints, [$break => $this->incExp($pre)]);
+        Cache::put("{$this->cache_key}_breakpoints", json_encode($breakpoints));
+
+        Log::debug("BP      -->", ['break' => $break, 'resume' => $this->incExp($pre)]);
+
         Cache::put("{$this->cache_key}_pre", $exp);
-        Cache::put("{$this->cache_key}_exp", "{$pre}/option[{$answer}]/*[1]");
+        Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");
+
+        Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => "{$exp}/*[1]"]);
+
+        return '';
+    }
+
+    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    {
+        throw new \Exception("Expects no feedback.");
     }
 }
 
@@ -290,22 +379,22 @@ class IfTag
 
         $pre = Cache::get("{$this->cache_key}_pre");
         $exp = Cache::get("{$this->cache_key}_exp");
-        $break = Cache::get("{$this->cache_key}_break");
+        // $break = Cache::get("{$this->cache_key}_break");
         $breakpoints = json_decode(Cache::get("{$this->cache_key}_breakpoints"), true);
-        $resume = Cache::get("{$this->cache_key}_resume");
+        // $resume = Cache::get("{$this->cache_key}_resume");
 
-        // Log::debug("---> ", ['pre' => $pre, 'exp' => $exp, 'break' => $break, 'resume' => $resume]);
+        // Log::debug("- -->", ['pre' => $pre, 'exp' => $exp, 'break' => $break, 'resume' => $resume]);
 
         Cache::put("{$this->cache_key}_pre", $exp);
         Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");
 
         $no_of_tags = $this->xpath->query("{$exp}/*")->length;
         $break = $this->incExp("{$exp}/*[1]", $no_of_tags);
-        $resume = $this->incExp($exp);
-        array_unshift($breakpoints, [$break => $resume]);
-        Cache::put("{$this->cache_key}_break", $break);
+        // $resume = $this->incExp($exp);
+        array_unshift($breakpoints, [$break => $this->incExp($exp)]);
+        // Cache::put("{$this->cache_key}_break", $break);
         Cache::put("{$this->cache_key}_breakpoints", json_encode($breakpoints));
-        Cache::put("{$this->cache_key}_resume", $resume);
+        // Cache::put("{$this->cache_key}_resume", $resume);
 
         // Log::debug("<--- ", ['pre' => $exp, 'exp' => "{$exp}/*[1]", 'break' => $break, 'resume' => $resume]);
 
@@ -340,6 +429,8 @@ class UssdController extends Controller
         if($pre) {
             $preNode = $xpath->query($pre)->item(0);
 
+            Log::debug("Process  -->", ['tag' => $preNode->tagName, 'pre' => $pre]);
+
             if($preNode->tagName == 'question') {
                 (new QuestionTag($cache_key))->process($preNode->attributes, $request->answer);
             } else if($preNode->tagName == 'options') {
@@ -372,17 +463,15 @@ class UssdController extends Controller
 
         $exp = $this->cache->get("{$cache_key}_exp");
 
-        // Log::debug("**** ", ['pre' => $pre, 'exp' => $exp]);
-
         $node = $xpath->query($exp)->item(0);
 
         if(! $node) {
-            Log::debug("OUT ---> {$exp}");
+            Log::debug("Error    -->", ['tag' => '', 'exp' => $exp]);
 
             // $pre = $this->cache->get("{$cache_key}_pre");
             $exp = $this->cache->get("{$cache_key}_exp");
-            $break = $this->cache->get("{$cache_key}_break");
-            $resume = $this->cache->get("{$cache_key}_resume"); // ...
+            // $break = $this->cache->get("{$cache_key}_break");
+            // $resume = $this->cache->get("{$cache_key}_resume"); // ...
             $breakpoints = json_decode($this->cache->get("{$cache_key}_breakpoints"), true);
 
             if(! $breakpoints || ! isset($breakpoints[0][$exp])) {
@@ -392,14 +481,16 @@ class UssdController extends Controller
             // Log::debug($exp, $breakpoints);
             $breakpoint = array_shift($breakpoints);
             $this->cache->put("{$cache_key}_exp", $breakpoint[$exp]);
-            $this->cache->put("{$cache_key}_break", '');
+            // $this->cache->put("{$cache_key}_break", '');
             $this->cache->put("{$cache_key}_breakpoints", json_encode($breakpoints));
-            $this->cache->put("{$cache_key}_resume", '');
+            // $this->cache->put("{$cache_key}_resume", '');
 
             $exp = $this->cache->get("{$cache_key}_exp");
 
             $node = $xpath->query($exp)->item(0);
         }
+
+        Log::debug("Handle   -->", ['tag' => $node->tagName, 'exp' => $exp]);
 
         if($node->tagName == 'variable') {
             $output = (new VariableTag($cache_key))->handle($node->attributes);
@@ -410,6 +501,8 @@ class UssdController extends Controller
             throw new \Exception($output);
         } else if($node->tagName == 'options') {
             $output = (new OptionsTag($cache_key, $xpath))->handle($node->attributes);
+        } else if($node->tagName == 'option') {
+            $output = (new OptionTag($cache_key, $xpath))->handle($node->attributes);
         } else if($node->tagName == 'if') {
             $output = (new IfTag($cache_key, $xpath))->handle($node->attributes);
         } else {
@@ -423,8 +516,8 @@ class UssdController extends Controller
 
         // $pre = $this->cache->get("{$cache_key}_pre");
         $exp = $this->cache->get("{$cache_key}_exp");
-        $break = $this->cache->get("{$cache_key}_break");
-        $resume = $this->cache->get("{$cache_key}_resume"); // ...
+        // $break = $this->cache->get("{$cache_key}_break");
+        // $resume = $this->cache->get("{$cache_key}_resume"); // ...
         $breakpoints = json_decode($this->cache->get("{$cache_key}_breakpoints"), true);
 
         // Log::debug("\nCheck", ['pre' => $pre, 'exp' => $exp, 'break' => $break, 'resume' => $resume, 'breakpoints' => $breakpoints]);
@@ -435,9 +528,9 @@ class UssdController extends Controller
             // Log::debug($exp, $breakpoints);
             $breakpoint = array_shift($breakpoints);
             $this->cache->put("{$cache_key}_exp", $breakpoint[$exp]);
-            $this->cache->put("{$cache_key}_break", '');
+            // $this->cache->put("{$cache_key}_break", '');
             $this->cache->put("{$cache_key}_breakpoints", json_encode($breakpoints));
-            $this->cache->put("{$cache_key}_resume", '');
+            // $this->cache->put("{$cache_key}_resume", '');
         }
 
         // if($break && $exp == $break) {
@@ -507,9 +600,9 @@ class UssdController extends Controller
 
             $this->cache->put("{$cache_key}_pre", '');
             $this->cache->put("{$cache_key}_exp", "/menus/menu[@name='customer']/*[1]");
-            $this->cache->put("{$cache_key}_break", '');
+            // $this->cache->put("{$cache_key}_break", '');
             $this->cache->put("{$cache_key}_breakpoints", "[]");
-            $this->cache->put("{$cache_key}_resume", '');
+            // $this->cache->put("{$cache_key}_resume", '');
         }
 
         // $sessionId = $this->cache->get("{$cache_key}_session_id");

@@ -6,25 +6,31 @@
         <question name="password" text="Enter password: "/>
         <response text="End here..."/> -->
 
-        <!-- <options header="Sign In" noback="no">
-            <option text="Credentials">
-                <question name="username" text="Enter username: "/>
+        <!-- <variable name="provider" value="MTN"/>
+        <options header="Buy Bundles" noback="no">
+            <option text="For Self">
+                <variable name="phone" value="0723876456"/>
             </option>
-            <response text="Proceed"/>
-        </options> -->
+            <option text="For Other">
+                <question name="phone" text="Enter phone number: "/>
+            </option>
+        </options>
+        <question name="amount" text="Enter amount: "/>
+        <question name="pin" text="Enter PIN: "/>
+        <response text="Transaction is being processed."/> -->
 
-        <variable name="ask-username" value="yes"/>
+        <!-- <variable name="ask-username" value="yes"/>
         <if key="ask-username" value="yes">
             <question name="username" text="Enter username: "/>
             <variable name="ask-password" value="yes"/>
             <if key="ask-password" value="yes">
                 <question name="password" text="Enter password: "/>
             </if>
-            <!-- <question name="greet" text="Say hi: "/> -->
+            <question name="greet" text="Say hi: "/>
         </if>
-        <response text="ExitPrompt"/>
+        <response text="ExitPrompt"/> -->
 
-        <!-- <options header="Send Money" noback="no">
+        <options header="Send Money" noback="no">
             <option text="Asia">
                 <options header="Asia">
                     <option text="China">
@@ -68,6 +74,6 @@
             <option text="Americas">
                 <response text="ComingSoon"/>
             </option>
-        </options> -->
+        </options>
     </menu>
 </menus>
