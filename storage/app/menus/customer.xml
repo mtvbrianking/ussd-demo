@@ -6,6 +6,32 @@
         <question name="password" text="Enter password: "/>
         <response text="End here..."/> -->
 
+        <options header="Choose gender" noback="no">
+            <option text="Male">
+                <variable name="gender" value="M"/>
+            </option>
+            <option text="Female">
+                <variable name="gender" value="F"/>
+            </option>
+            <option text="Not Stated">
+                <variable name="gender" value=""/>
+            </option>
+        </options>
+
+        <choose>
+            <when key="gender" value="M">
+                <question name="club" text="Football club? "/>
+            </when>
+            <when key="gender" value="F">
+                <question name="soap" text="TV soap? "/>
+            </when>
+            <otherwise>
+                <question name="hobby" text="Hobbies? "/>
+            </otherwise>
+        </choose>
+
+        <response text="Thank you."/>
+
         <!-- <variable name="provider" value="MTN"/>
         <options header="Buy Bundles" noback="no">
             <option text="For Self">
@@ -30,7 +56,7 @@
         </if>
         <response text="ExitPrompt"/> -->
 
-        <question name="greet" text="Enter name: "/>
+        <!-- <question name="greet" text="Enter name: "/>
         <options header="Send Money" noback="no">
             <option text="Americas">
                 <response text="ComingSoon"/>
@@ -75,6 +101,6 @@
                     </option>
                 </options>
             </option>
-        </options>
+        </options> -->
     </menu>
 </menus>

@@ -208,11 +208,11 @@ class OptionsTag
 
         Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
-        $OptionEls = $this->xpath->query("{$exp}/option");
+        $optionEls = $this->xpath->query("{$exp}/option");
         
-        foreach ($OptionEls as $idx => $OptionEl) {
+        foreach ($optionEls as $idx => $optionEl) {
             $pos = $idx + 1;
-            $body .= "\n{$pos}) " . $OptionEl->attributes->getNamedItem("text")->nodeValue;
+            $body .= "\n{$pos}) " . $optionEl->attributes->getNamedItem("text")->nodeValue;
         }
 
         if(! $attributes->getNamedItem("noback")) {
@@ -396,6 +396,223 @@ class IfTag
     }
 }
 
+class ChooseTag
+{
+    protected string $cache_key;
+    protected \DOMXPath $xpath;
+
+    public function __construct($cache_key, ?\DOMXPath $xpath)
+    {
+        $this->cache_key = $cache_key;
+        $this->xpath = $xpath;
+    }
+
+    protected function incExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] + $step; 
+        }, $exp);
+    }
+
+    protected function decExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] - $step; 
+        }, $exp);
+    }
+
+    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    {
+        $pre = Cache::get("{$this->cache_key}_pre");
+        $exp = Cache::get("{$this->cache_key}_exp");
+
+        Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
+
+        $whenEls = $this->xpath->query("{$exp}/when");
+        
+        // $body = "Choose";
+
+        $pos = 0;
+
+        $isMatched = false;
+
+        foreach ($whenEls as $idx => $whenEl) {
+            $pos = $idx + 1;
+            $key = $whenEl->attributes->getNamedItem("key")->nodeValue;
+            $val = $whenEl->attributes->getNamedItem("value")->nodeValue;
+            // $body .= "\nwhen({$key} == {$val})";
+
+            $var = Cache::get("{$this->cache_key}_{$key}");
+
+            if($var != $val) {
+                continue;
+            }
+
+            $isMatched = true;
+
+            Cache::put("{$this->cache_key}_pre", $exp);
+            Cache::put("{$this->cache_key}_exp", "{$exp}/*[{$pos}]");
+
+            break;
+        }
+
+        if($isMatched) {
+            return '';
+        }
+
+        $otherwiseEl = $this->xpath->query("{$exp}/otherwise")->item(0);
+
+        if(! $otherwiseEl) {
+            return '';
+        }
+
+        ++$pos;
+
+        Cache::put("{$this->cache_key}_pre", $exp);
+        Cache::put("{$this->cache_key}_exp", "{$exp}/*[{$pos}]");
+
+        Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => "{$exp}/*[{$pos}]"]);
+
+        return '';
+
+        // throw new \Exception("..................");
+
+        // return $body;
+
+        // $otherwiseEl = $this->xpath->query("{$exp}/otherwise")->item(0);
+        // if($otherwiseEl) {
+        //     $body .= "\notherwise()";
+        // }
+
+        // $key = $attributes->getNamedItem("key")->nodeValue;
+        // $value = $attributes->getNamedItem("value")->nodeValue;
+
+        // if(Cache::get("{$this->cache_key}_{$key}") != $value) {
+        //     $exp = Cache::get("{$this->cache_key}_exp");
+
+        //     Cache::put("{$this->cache_key}_pre", $exp);
+        //     Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+
+        //     return '';
+        // }
+    }
+
+    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    {
+        throw new \Exception("Expects no feedback.");
+    }
+}
+
+class WhenTag
+{
+    protected string $cache_key;
+    protected \DOMXPath $xpath;
+
+    public function __construct($cache_key, ?\DOMXPath $xpath)
+    {
+        $this->cache_key = $cache_key;
+        $this->xpath = $xpath;
+    }
+
+    protected function incExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] + $step; 
+        }, $exp);
+    }
+
+    protected function decExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] - $step; 
+        }, $exp);
+    }
+
+    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    {
+        $pre = Cache::get("{$this->cache_key}_pre");
+        $exp = Cache::get("{$this->cache_key}_exp");
+        $breakpoints = json_decode(Cache::get("{$this->cache_key}_breakpoints"), true);
+
+        Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
+
+        $no_of_tags = $this->xpath->query("{$exp}/*")->length;
+        $break = $this->incExp("{$exp}/*[1]", $no_of_tags);
+
+        array_unshift($breakpoints, [$break => $this->incExp($pre)]);
+        Cache::put("{$this->cache_key}_breakpoints", json_encode($breakpoints));
+
+        Log::debug("BP       -->", ['break' => $break, 'resume' => $this->incExp($pre)]);
+
+        Cache::put("{$this->cache_key}_pre", $exp);
+        Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");
+
+        Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => "{$exp}/*[1]"]);
+
+        return '';
+    }
+
+    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    {
+        throw new \Exception("Expects no feedback.");
+    }
+}
+
+class OtherwiseTag
+{
+    protected string $cache_key;
+    protected \DOMXPath $xpath;
+
+    public function __construct($cache_key, ?\DOMXPath $xpath)
+    {
+        $this->cache_key = $cache_key;
+        $this->xpath = $xpath;
+    }
+
+    protected function incExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] + $step; 
+        }, $exp);
+    }
+
+    protected function decExp(string $exp, int $step = 1): string
+    {
+        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+            return $matches[1] - $step; 
+        }, $exp);
+    }
+
+    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    {
+        $pre = Cache::get("{$this->cache_key}_pre");
+        $exp = Cache::get("{$this->cache_key}_exp");
+        $breakpoints = json_decode(Cache::get("{$this->cache_key}_breakpoints"), true);
+
+        Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
+
+        $no_of_tags = $this->xpath->query("{$exp}/*")->length;
+        $break = $this->incExp("{$exp}/*[1]", $no_of_tags);
+
+        array_unshift($breakpoints, [$break => $this->incExp($pre)]);
+        Cache::put("{$this->cache_key}_breakpoints", json_encode($breakpoints));
+
+        Log::debug("BP       -->", ['break' => $break, 'resume' => $this->incExp($pre)]);
+
+        Cache::put("{$this->cache_key}_pre", $exp);
+        Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");
+
+        Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => "{$exp}/*[1]"]);
+
+        return '';
+    }
+
+    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    {
+        throw new \Exception("Expects no feedback.");
+    }
+}
+
 class UssdController extends Controller
 {
     const FC = 'continue';
@@ -494,6 +711,12 @@ class UssdController extends Controller
             $output = (new OptionTag($cache_key, $xpath))->handle($node->attributes);
         } else if($node->tagName == 'if') {
             $output = (new IfTag($cache_key, $xpath))->handle($node->attributes);
+        } else if($node->tagName == 'choose') {
+            $output = (new ChooseTag($cache_key, $xpath))->handle($node->attributes);
+        } else if($node->tagName == 'when') {
+            $output = (new WhenTag($cache_key, $xpath))->handle($node->attributes);
+        } else if($node->tagName == 'otherwise') {
+            $output = (new OtherwiseTag($cache_key, $xpath))->handle($node->attributes);
         } else {
             throw new \Exception("Unknown tag: {$node->tagName}");
         }
