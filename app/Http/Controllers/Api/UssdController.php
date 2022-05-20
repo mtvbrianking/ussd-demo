@@ -177,35 +177,34 @@ class OptionsTag
 
     protected function decExp(string $exp, int $step = 1): string
     {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
+        $exp = preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
             return $matches[1] - $step; 
         }, $exp);
+
+        preg_match('/(\d+)(?!.*\d)/', $exp, $matches);
+
+        return $matches[1] > 0 ? $exp : '';
     }
 
-    protected function stepBack(string $exp, $limit = 1, $step = 1): string
+    protected function stepBack(string $exp, $limit = 1): string
     {
         $count = 0;
 
         // (\/option\[\d\]\/\*\[\d\])(?!.*[\/option\[\d\]\/\*\[\d\]])
-        $exp = preg_replace_callback("|(\/\*\[\d\])(?!.\*\[\d\])|", function($matches) { 
+        // (\/\*\[\d\])(?!.\*\[\d\])
+        $exp = preg_replace_callback("|(\/\*\[\d\])(?!\*\[\d\])|", function($matches) { 
             return ''; 
         }, $exp, $limit, $count);
 
+        if($count < $limit) {
+            return '';
+        }
+
+        if(preg_match("|(\/\*\[\d\])$|", $exp) === 0) {
+            return '';
+        }
+
         return $exp;
-
-        // if($count > 0) {
-        //     return $exp;
-        // }
-
-        // preg_match('/(\d+)(?!.*\d)/', $exp, $matches);
-
-        // if($matches[1] < 2) { // last possible step
-        //     return '';
-        // }
-
-        // return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-        //     return $matches[1] - $step; 
-        // }, $exp); 
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -253,10 +252,10 @@ class OptionsTag
                 throw new \Exception("Invalid option.");
             }
 
-            $exp = $this->stepBack($pre);
-            $pre = $this->stepBack($exp);
+            $exp = $this->stepBack($pre, 2);
+            $pre = $this->stepBack($pre, 3);
 
-            Log::debug("BP      -->", ['pre' => $pre, 'exp' => $exp]);
+            Log::debug("SB       -->", ['pre' => $pre, 'exp' => $exp]);
 
             Cache::put("{$this->cache_key}_pre", $pre);
             Cache::put("{$this->cache_key}_exp", $exp);
@@ -320,7 +319,7 @@ class OptionTag
         array_unshift($breakpoints, [$break => $this->incExp($pre)]);
         Cache::put("{$this->cache_key}_breakpoints", json_encode($breakpoints));
 
-        Log::debug("BP      -->", ['break' => $break, 'resume' => $this->incExp($pre)]);
+        Log::debug("BP       -->", ['break' => $break, 'resume' => $this->incExp($pre)]);
 
         Cache::put("{$this->cache_key}_pre", $exp);
         Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");

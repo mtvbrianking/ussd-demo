@@ -31,7 +31,7 @@
         <response text="ExitPrompt"/> -->
 
         <options header="Send Money" noback="no">
-            <option text="Asia">
+            <!-- <option text="Asia">
                 <options header="Asia">
                     <option text="China">
                         <options header="China">
@@ -59,7 +59,7 @@
                         <response text="ComingSoon"/>
                     </option>
                 </options>
-            </option>
+            </option> -->
             <option text="Europe">
                 <options header="Europe">
                     <option text="Turkey">
@@ -71,9 +71,9 @@
                     </option>
                 </options>
             </option>
-            <option text="Americas">
+            <!-- <option text="Americas">
                 <response text="ComingSoon"/>
-            </option>
+            </option> -->
         </options>
     </menu>
 </menus>
