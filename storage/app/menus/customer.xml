@@ -30,8 +30,23 @@
         </if>
         <response text="ExitPrompt"/> -->
 
+        <question name="greet" text="Enter name: "/>
         <options header="Send Money" noback="no">
-            <!-- <option text="Asia">
+            <option text="Americas">
+                <response text="ComingSoon"/>
+            </option>
+            <option text="Europe">
+                <options header="Europe">
+                    <option text="Turkey">
+                        <options header="Turkey">
+                            <option text="Bank Transfer">
+                                <response text="ComingSoon"/>
+                            </option>
+                        </options>
+                    </option>
+                </options>
+            </option>
+            <option text="Asia">
                 <options header="Asia">
                     <option text="China">
                         <options header="China">
@@ -59,21 +74,7 @@
                         <response text="ComingSoon"/>
                     </option>
                 </options>
-            </option> -->
-            <option text="Europe">
-                <options header="Europe">
-                    <option text="Turkey">
-                        <options header="Turkey">
-                            <option text="Bank Transfer">
-                                <response text="ComingSoon"/>
-                            </option>
-                        </options>
-                    </option>
-                </options>
             </option>
-            <!-- <option text="Americas">
-                <response text="ComingSoon"/>
-            </option> -->
         </options>
     </menu>
 </menus>

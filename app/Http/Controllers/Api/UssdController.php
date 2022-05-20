@@ -186,25 +186,15 @@ class OptionsTag
         return $matches[1] > 0 ? $exp : '';
     }
 
-    protected function stepBack(string $exp, $limit = 1): string
+    protected function goBack(string $exp, $steps = 1): string
     {
         $count = 0;
 
-        // (\/option\[\d\]\/\*\[\d\])(?!.*[\/option\[\d\]\/\*\[\d\]])
-        // (\/\*\[\d\])(?!.\*\[\d\])
-        $exp = preg_replace_callback("|(\/\*\[\d\])(?!\*\[\d\])|", function($matches) { 
+        $exp = preg_replace_callback("|(\/\*\[\d\]){{$steps}}$|", function($matches) { 
             return ''; 
-        }, $exp, $limit, $count);
+        }, $exp, 1, $count);
 
-        if($count < $limit) {
-            return '';
-        }
-
-        if(preg_match("|(\/\*\[\d\])$|", $exp) === 0) {
-            return '';
-        }
-
-        return $exp;
+        return $count === 1 ? $exp : '';
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -249,15 +239,15 @@ class OptionsTag
 
         if($answer == 0) {
             if($attributes->getNamedItem("noback")) {
-                throw new \Exception("Invalid option.");
+                throw new \Exception("Invalid choice.");
             }
 
-            $exp = $this->stepBack($pre, 2);
-            $pre = $this->stepBack($pre, 3);
+            $exp = $this->goBack($pre, 2);
+            // $pre = $this->goBack($pre, 3);
 
-            Log::debug("SB       -->", ['pre' => $pre, 'exp' => $exp]);
+            Log::debug("GoBack   -->", ['exp' => $exp]);
 
-            Cache::put("{$this->cache_key}_pre", $pre);
+            // Cache::put("{$this->cache_key}_pre", $pre);
             Cache::put("{$this->cache_key}_exp", $exp);
 
             return;
