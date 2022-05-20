@@ -14,15 +14,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Sparors\Ussd\Facades\Ussd;
 
-class ResponseTag
+trait ExpManipulators
 {
-    protected $cache_key;
-
-    public function __construct($cache_key)
-    {
-        $this->cache_key = $cache_key;
-    }
-
     protected function incExp(string $exp, int $step = 1): string
     {
         return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
@@ -35,6 +28,25 @@ class ResponseTag
         return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
             return $matches[1] - $step; 
         }, $exp);
+    }
+}
+
+interface Tag
+{
+    public function handle(\DOMNamedNodeMap $attributes) : ?string;
+
+    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void;
+}
+
+class ResponseTag implements Tag
+{
+    use ExpManipulators;
+
+    protected string $cache_key;
+
+    public function __construct($cache_key)
+    {
+        $this->cache_key = $cache_key;
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -58,27 +70,15 @@ class ResponseTag
     }
 }
 
-class VariableTag
+class VariableTag implements Tag
 {
-    protected $cache_key;
+    use ExpManipulators;
+
+    protected string $cache_key;
 
     public function __construct($cache_key)
     {
         $this->cache_key = $cache_key;
-    }
-
-    protected function incExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] + $step; 
-        }, $exp);
-    }
-
-    protected function decExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] - $step; 
-        }, $exp);
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -107,27 +107,15 @@ class VariableTag
     }
 }
 
-class QuestionTag
+class QuestionTag implements Tag
 {
-    protected $cache_key;
+    use ExpManipulators;
+
+    protected string $cache_key;
 
     public function __construct($cache_key)
     {
         $this->cache_key = $cache_key;
-    }
-
-    protected function incExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] + $step; 
-        }, $exp);
-    }
-
-    protected function decExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] - $step; 
-        }, $exp);
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -157,8 +145,10 @@ class QuestionTag
     }
 }
 
-class OptionsTag
+class OptionsTag implements Tag
 {
+    use ExpManipulators;
+
     protected string $cache_key;
     protected \DOMXPath $xpath;
 
@@ -166,13 +156,6 @@ class OptionsTag
     {
         $this->cache_key = $cache_key;
         $this->xpath = $xpath;
-    }
-
-    protected function incExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] + $step; 
-        }, $exp);
     }
 
     protected function decExp(string $exp, int $step = 1): string
@@ -243,11 +226,9 @@ class OptionsTag
             }
 
             $exp = $this->goBack($pre, 2);
-            // $pre = $this->goBack($pre, 3);
 
             Log::debug("GoBack   -->", ['exp' => $exp]);
 
-            // Cache::put("{$this->cache_key}_pre", $pre);
             Cache::put("{$this->cache_key}_exp", $exp);
 
             return;
@@ -257,21 +238,15 @@ class OptionsTag
             throw new \Exception("Invalid option.");
         }
 
-        // Cache::put("{$this->cache_key}_pre", $exp);
         Cache::put("{$this->cache_key}_exp", "{$pre}/*[{$answer}]");
-        // Cache::put("{$this->cache_key}_exp", "{$pre}/*[{$answer}]/*[1]"); // into the option
-        // Cache::put("{$this->cache_key}_exp", "{$pre}/option[{$answer}]/*[1]");
         Log::debug("CheckOut -->", ['pre' => $pre, 'exp' => "{$pre}/*[{$answer}]"]);
-
-        // Cache::put("{$this->cache_key}_pre", $pre);
-        // Cache::put("{$this->cache_key}_exp", "{$exp}/*[{$answer}]");
-
-        // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => "{$exp}/*[{$answer}]"]);
     }
 }
 
-class OptionTag
+class OptionTag implements Tag
 {
+    use ExpManipulators;
+
     protected string $cache_key;
     protected \DOMXPath $xpath;
 
@@ -279,20 +254,6 @@ class OptionTag
     {
         $this->cache_key = $cache_key;
         $this->xpath = $xpath;
-    }
-
-    protected function incExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] + $step; 
-        }, $exp);
-    }
-
-    protected function decExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] - $step; 
-        }, $exp);
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -325,8 +286,10 @@ class OptionTag
     }
 }
 
-class IfTag
+class IfTag implements Tag
 {
+    use ExpManipulators;
+
     protected string $cache_key;
     protected \DOMXPath $xpath;
 
@@ -334,20 +297,6 @@ class IfTag
     {
         $this->cache_key = $cache_key;
         $this->xpath = $xpath;
-    }
-
-    protected function incExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] + $step; 
-        }, $exp);
-    }
-
-    protected function decExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] - $step; 
-        }, $exp);
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -364,28 +313,17 @@ class IfTag
             return '';
         }
 
-        // Log::debug("----------------------------------------------------------------");
-
         $pre = Cache::get("{$this->cache_key}_pre");
         $exp = Cache::get("{$this->cache_key}_exp");
-        // $break = Cache::get("{$this->cache_key}_break");
         $breakpoints = json_decode(Cache::get("{$this->cache_key}_breakpoints"), true);
-        // $resume = Cache::get("{$this->cache_key}_resume");
-
-        // Log::debug("- -->", ['pre' => $pre, 'exp' => $exp, 'break' => $break, 'resume' => $resume]);
 
         Cache::put("{$this->cache_key}_pre", $exp);
         Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");
 
         $no_of_tags = $this->xpath->query("{$exp}/*")->length;
         $break = $this->incExp("{$exp}/*[1]", $no_of_tags);
-        // $resume = $this->incExp($exp);
         array_unshift($breakpoints, [$break => $this->incExp($exp)]);
-        // Cache::put("{$this->cache_key}_break", $break);
         Cache::put("{$this->cache_key}_breakpoints", json_encode($breakpoints));
-        // Cache::put("{$this->cache_key}_resume", $resume);
-
-        // Log::debug("<--- ", ['pre' => $exp, 'exp' => "{$exp}/*[1]", 'break' => $break, 'resume' => $resume]);
 
         return '';
     }
@@ -396,8 +334,10 @@ class IfTag
     }
 }
 
-class ChooseTag
+class ChooseTag implements Tag
 {
+    use ExpManipulators;
+
     protected string $cache_key;
     protected \DOMXPath $xpath;
 
@@ -405,20 +345,6 @@ class ChooseTag
     {
         $this->cache_key = $cache_key;
         $this->xpath = $xpath;
-    }
-
-    protected function incExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] + $step; 
-        }, $exp);
-    }
-
-    protected function decExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] - $step; 
-        }, $exp);
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -429,8 +355,6 @@ class ChooseTag
         Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
         $whenEls = $this->xpath->query("{$exp}/when");
-        
-        // $body = "Choose";
 
         $pos = 0;
 
@@ -440,7 +364,6 @@ class ChooseTag
             $pos = $idx + 1;
             $key = $whenEl->attributes->getNamedItem("key")->nodeValue;
             $val = $whenEl->attributes->getNamedItem("value")->nodeValue;
-            // $body .= "\nwhen({$key} == {$val})";
 
             $var = Cache::get("{$this->cache_key}_{$key}");
 
@@ -474,27 +397,6 @@ class ChooseTag
         Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => "{$exp}/*[{$pos}]"]);
 
         return '';
-
-        // throw new \Exception("..................");
-
-        // return $body;
-
-        // $otherwiseEl = $this->xpath->query("{$exp}/otherwise")->item(0);
-        // if($otherwiseEl) {
-        //     $body .= "\notherwise()";
-        // }
-
-        // $key = $attributes->getNamedItem("key")->nodeValue;
-        // $value = $attributes->getNamedItem("value")->nodeValue;
-
-        // if(Cache::get("{$this->cache_key}_{$key}") != $value) {
-        //     $exp = Cache::get("{$this->cache_key}_exp");
-
-        //     Cache::put("{$this->cache_key}_pre", $exp);
-        //     Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
-
-        //     return '';
-        // }
     }
 
     public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
@@ -503,8 +405,10 @@ class ChooseTag
     }
 }
 
-class WhenTag
+class WhenTag implements Tag
 {
+    use ExpManipulators;
+
     protected string $cache_key;
     protected \DOMXPath $xpath;
 
@@ -512,20 +416,6 @@ class WhenTag
     {
         $this->cache_key = $cache_key;
         $this->xpath = $xpath;
-    }
-
-    protected function incExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] + $step; 
-        }, $exp);
-    }
-
-    protected function decExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] - $step; 
-        }, $exp);
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -558,8 +448,10 @@ class WhenTag
     }
 }
 
-class OtherwiseTag
+class OtherwiseTag implements Tag
 {
+    use ExpManipulators;
+
     protected string $cache_key;
     protected \DOMXPath $xpath;
 
@@ -567,20 +459,6 @@ class OtherwiseTag
     {
         $this->cache_key = $cache_key;
         $this->xpath = $xpath;
-    }
-
-    protected function incExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] + $step; 
-        }, $exp);
-    }
-
-    protected function decExp(string $exp, int $step = 1): string
-    {
-        return preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] - $step; 
-        }, $exp);
     }
 
     public function handle(\DOMNamedNodeMap $attributes) : ?string
@@ -644,29 +522,6 @@ class UssdController extends Controller
             }
         }
 
-        // ...........................................................................
-
-        // // $pre = $this->cache->get("{$cache_key}_pre");
-        // $exp = $this->cache->get("{$cache_key}_exp");
-        // $break = $this->cache->get("{$cache_key}_break");
-        // $resume = $this->cache->get("{$cache_key}_resume"); // ...
-        // $breakpoints = json_decode($this->cache->get("{$cache_key}_breakpoints"), true);
-
-        // // Log::debug("\nCheck", ['pre' => $pre, 'exp' => $exp, 'break' => $break, 'resume' => $resume, 'breakpoints' => $breakpoints]);
-
-        // // Log::debug("{$exp} == {$break}");
-
-        // if($breakpoints && isset($breakpoints[0][$exp])) {
-        //     // Log::debug($exp, $breakpoints);
-        //     $breakpoint = array_shift($breakpoints);
-        //     $this->cache->put("{$cache_key}_exp", $breakpoint[$exp]);
-        //     $this->cache->put("{$cache_key}_break", '');
-        //     $this->cache->put("{$cache_key}_breakpoints", json_encode($breakpoints));
-        //     $this->cache->put("{$cache_key}_resume", '');
-        // }
-
-        // ...........................................................................
-
         $exp = $this->cache->get("{$cache_key}_exp");
 
         $node = $xpath->query($exp)->item(0);
@@ -674,22 +529,16 @@ class UssdController extends Controller
         if(! $node) {
             Log::debug("Error    -->", ['tag' => '', 'exp' => $exp]);
 
-            // $pre = $this->cache->get("{$cache_key}_pre");
             $exp = $this->cache->get("{$cache_key}_exp");
-            // $break = $this->cache->get("{$cache_key}_break");
-            // $resume = $this->cache->get("{$cache_key}_resume"); // ...
             $breakpoints = json_decode($this->cache->get("{$cache_key}_breakpoints"), true);
 
             if(! $breakpoints || ! isset($breakpoints[0][$exp])) {
                 throw new \Exception("Missing tag");
             }
 
-            // Log::debug($exp, $breakpoints);
             $breakpoint = array_shift($breakpoints);
             $this->cache->put("{$cache_key}_exp", $breakpoint[$exp]);
-            // $this->cache->put("{$cache_key}_break", '');
             $this->cache->put("{$cache_key}_breakpoints", json_encode($breakpoints));
-            // $this->cache->put("{$cache_key}_resume", '');
 
             $exp = $this->cache->get("{$cache_key}_exp");
 
@@ -721,39 +570,14 @@ class UssdController extends Controller
             throw new \Exception("Unknown tag: {$node->tagName}");
         }
 
-        // $this->cache->put("{$cache_key}_pre", $exp);
-        // $this->cache->put("{$cache_key}_exp", $this->incExp($exp));
-
-        // Log::debug("==== ", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
-
-        // $pre = $this->cache->get("{$cache_key}_pre");
         $exp = $this->cache->get("{$cache_key}_exp");
-        // $break = $this->cache->get("{$cache_key}_break");
-        // $resume = $this->cache->get("{$cache_key}_resume"); // ...
         $breakpoints = json_decode($this->cache->get("{$cache_key}_breakpoints"), true);
 
-        // Log::debug("\nCheck", ['pre' => $pre, 'exp' => $exp, 'break' => $break, 'resume' => $resume, 'breakpoints' => $breakpoints]);
-
-        // Log::debug("{$exp} == {$break}");
-
         if($breakpoints && isset($breakpoints[0][$exp])) {
-            // Log::debug($exp, $breakpoints);
             $breakpoint = array_shift($breakpoints);
             $this->cache->put("{$cache_key}_exp", $breakpoint[$exp]);
-            // $this->cache->put("{$cache_key}_break", '');
             $this->cache->put("{$cache_key}_breakpoints", json_encode($breakpoints));
-            // $this->cache->put("{$cache_key}_resume", '');
         }
-
-        // if($break && $exp == $break) {
-        //     // $this->cache->put("{$cache_key}_pre", $pre);
-        //     $resume = $this->cache->get("{$cache_key}_resume");
-
-        //     $this->cache->put("{$cache_key}_exp", $resume);
-        //     $this->cache->put("{$cache_key}_break", '');
-        //     $this->cache->put("{$cache_key}_breakpoints", "[]");
-        //     $this->cache->put("{$cache_key}_resume", '');
-        // }
 
         if(! $output) {
             return $this->walk($request, $xpath);
@@ -795,31 +619,17 @@ class UssdController extends Controller
 
         $preSessionId = $this->cache->get("{$cache_key}_session_id");
 
-        // return response()->json(['flow' => self::FB, 'data' => "'{$preSessionId}' && '{$preSessionId}' != '{$request->session_id}'"]);
-
-        // $data = DB::connection('sqlite_cache')->table('cache')->select(['key', 'value'])->where('key', 'like', "{$cache_key}_%")->get();
-
-        // Log::debug('data', $data->toArray());
-
         if($preSessionId != $request->session_id) {
             if($preSessionId != '') {
                 $affected = DB::connection('sqlite_cache')->table('cache')->where('key', 'like', "{$cache_key}_%")->delete();
-
-                // return response()->json(['flow' => self::FB, 'data' => "{$cache_key}_% => {$affected}"]);
             }
 
             $this->cache->put("{$cache_key}_session_id", $request->session_id);
 
             $this->cache->put("{$cache_key}_pre", '');
             $this->cache->put("{$cache_key}_exp", "/menus/menu[@name='customer']/*[1]");
-            // $this->cache->put("{$cache_key}_break", '');
             $this->cache->put("{$cache_key}_breakpoints", "[]");
-            // $this->cache->put("{$cache_key}_resume", '');
         }
-
-        // $sessionId = $this->cache->get("{$cache_key}_session_id");
-
-        // return response()->json(['flow' => self::FB, 'data' => "'{$sessionId}'"]);
 
         // ...
 
