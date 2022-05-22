@@ -44,9 +44,9 @@ class UssdController extends Controller
 
             $xpath = new \DOMXPath($doc);
 
-            $prefix = "{$request->phone_number}_{$request->service_code}";
-
             $exp = "/menus/menu[@name='customer']/*[1]";
+
+            $prefix = "{$request->phone_number}_{$request->service_code}";
             
             $parser = new Parser($xpath, $exp, $this->cache, $prefix, $request->session_id, 120);
 

@@ -51,7 +51,7 @@ class Parser
         $this->cache->put("{$this->prefix}_breakpoints", "[]", $this->ttl);
     }
 
-    protected function doProcess(?string $answer): void
+    protected function processResponse(?string $answer): void
     {
         $pre = $this->cache->get("{$this->prefix}_pre");
 
@@ -85,7 +85,7 @@ class Parser
         $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), $this->ttl);
     }
 
-    protected function doHandle(): ?string
+    protected function renderNext(): ?string
     {
         // Log::debug("Handle   -->", ['tag' => $node->tagName, 'exp' => $exp]);
 
@@ -120,7 +120,7 @@ class Parser
 
     public function parse(?string $answer): string
     {
-        $this->doProcess($answer);
+        $this->processResponse($answer);
 
         $exp = $this->cache->get("{$this->prefix}_exp");
 
@@ -130,7 +130,7 @@ class Parser
             $this->setBreakpoint();
         }
 
-        $output = $this->doHandle();
+        $output = $this->renderNext();
 
         if(! $output) {
             return $this->parse($answer);

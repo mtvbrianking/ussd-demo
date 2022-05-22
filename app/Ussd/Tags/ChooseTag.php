@@ -31,7 +31,7 @@ class ChooseTag implements Tag
 
         // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
-        $whenEls = $this->xpath->query("{$exp}/when");
+        $whenEls = $this->xpath->query('when', $node);
 
         $pos = 0;
 
@@ -60,7 +60,7 @@ class ChooseTag implements Tag
             return '';
         }
 
-        $otherwiseEl = $this->xpath->query("{$exp}/otherwise")->item(0);
+        $otherwiseEl = $this->xpath->query('otherwise', $node)->item(0);
 
         if(! $otherwiseEl) {
             return '';

@@ -32,7 +32,7 @@ class WhenTag implements Tag
 
         // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
-        $no_of_tags = $this->xpath->query("{$exp}/*")->length;
+        $no_of_tags = $this->xpath->query('*', $node)->length;
         $break = $this->incExp("{$exp}/*[1]", $no_of_tags);
 
         array_unshift($breakpoints, [$break => $this->incExp($pre)]);

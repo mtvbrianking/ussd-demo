@@ -3,6 +3,7 @@
 namespace App\Ussd\Tags;
 
 use App\Ussd\Contracts\Tag;
+use App\Ussd\Support\Helper;
 use App\Ussd\Traits\ExpManipulators;
 use Illuminate\Contracts\Cache\Repository as CacheContract;
 use Illuminate\Support\Facades\Log;
@@ -46,11 +47,19 @@ class OptionsTag implements Tag
 
         // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
-        $optionEls = $this->xpath->query("{$exp}/option");
+        // $children = $this->xpath->query('option', $node);
         
-        foreach ($optionEls as $idx => $optionEl) {
-            $pos = $idx + 1;
-            $body .= "\n{$pos}) " . $optionEl->attributes->getNamedItem("text")->nodeValue;
+        // foreach ($children as $idx => $child) {
+        //     $pos = $idx + 1;
+        //     $body .= "\n{$pos}) " . $child->attributes->getNamedItem("text")->nodeValue;
+        // }
+
+        $children = Helper::getDomElements($node->childNodes, 'option');
+
+        $pos = 0;
+        foreach ($children as $child) {
+            ++$pos;
+            $body .= "\n{$pos}) " . $child->attributes->getNamedItem("text")->nodeValue;
         }
 
         if(! $node->attributes->getNamedItem("noback")) {
@@ -89,7 +98,11 @@ class OptionsTag implements Tag
             return;
         }
 
-        if((int) $answer > $this->xpath->query("{$pre}/option")->length) {
+        // if((int) $answer > $this->xpath->query('option', $node)->length) {}
+
+        $children = Helper::getDomElements($node->childNodes, 'option');
+
+        if((int) $answer > count($children)) {
             throw new \Exception("Invalid option.");
         }
 

@@ -45,7 +45,7 @@ class IfTag implements Tag
         $this->cache->put("{$this->prefix}_pre", $exp, $this->ttl);
         $this->cache->put("{$this->prefix}_exp", "{$exp}/*[1]", $this->ttl);
 
-        $no_of_tags = $this->xpath->query("{$exp}/*")->length;
+        $no_of_tags = $this->xpath->query('*', $node)->length;
         $break = $this->incExp("{$exp}/*[1]", $no_of_tags);
         array_unshift($breakpoints, [$break => $this->incExp($exp)]);
         $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), $this->ttl);

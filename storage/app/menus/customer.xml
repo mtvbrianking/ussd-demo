@@ -6,7 +6,7 @@
         <question name="password" text="Enter password: "/>
         <response text="End here..."/> -->
 
-        <!-- <options header="Choose gender" noback="no">
+        <options header="Choose gender" noback="no">
             <option text="Male">
                 <variable name="gender" value="M"/>
             </option>
@@ -30,7 +30,7 @@
             </otherwise>
         </choose>
 
-        <response text="Thank you."/> -->
+        <response text="Thank you."/>
 
         <!-- <variable name="provider" value="MTN"/>
         <options header="Buy Bundles" noback="no">
@@ -45,7 +45,7 @@
         <question name="pin" text="Enter PIN: "/>
         <response text="Transaction is being processed."/> -->
 
-        <variable name="ask-username" value="yes"/>
+        <!-- <variable name="ask-username" value="yes"/>
         <if key="ask-username" value="yes">
             <question name="username" text="Enter username: "/>
             <variable name="ask-password" value="yes"/>
@@ -54,7 +54,7 @@
             </if>
             <question name="greet" text="Say hi: "/>
         </if>
-        <response text="ExitPrompt"/>
+        <response text="ExitPrompt"/> -->
 
         <!-- <question name="greet" text="Enter name: "/>
         <options header="Send Money" noback="no">
