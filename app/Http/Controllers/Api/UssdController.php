@@ -47,10 +47,10 @@ class UssdController extends Controller
             $prefix = "{$request->phone_number}_{$request->service_code}";
 
             $exp = "/menus/menu[@name='customer']/*[1]";
+            
+            $parser = new Parser($xpath, $exp, $this->cache, $prefix, $request->session_id, 120);
 
-            $parser = new Parser($this->cache, $prefix, $request->session_id, $exp, 120);
-
-            $output = $parser->parse($xpath, $request->answer);
+            $output = $parser->parse($request->answer);
         } catch(\Exception $ex) {
             return response()
                 ->json(['flow' => self::FB, 'data' => $ex->getMessage()])

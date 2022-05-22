@@ -18,12 +18,14 @@ use Illuminate\Support\Str;
 
 class Parser
 {
+    protected \DOMXPath $xpath;
     protected CacheContract $cache;
     protected string $prefix;
     protected int $ttl;
 
-    public function __construct(CacheContract $cache, string $prefix, string $session_id, string $exp = "/*[1]", ?int $ttl = null)
+    public function __construct(\DOMXPath $xpath, string $exp, CacheContract $cache, string $prefix, string $session_id, ?int $ttl = null)
     {
+        $this->xpath = $xpath;
         $this->cache = $cache;
         $this->prefix = $prefix;
         $this->ttl = $ttl;
@@ -49,7 +51,7 @@ class Parser
         $this->cache->put("{$this->prefix}_breakpoints", "[]", $this->ttl);
     }
 
-    protected function doProcess(\DOMXPath $xpath, ?string $answer): void
+    protected function doProcess(?string $answer): void
     {
         $pre = $this->cache->get("{$this->prefix}_pre");
 
@@ -57,12 +59,12 @@ class Parser
             return;
         }
 
-        $preNode = $xpath->query($pre)->item(0);
+        $preNode = $this->xpath->query($pre)->item(0);
 
         // Log::debug("Process  -->", ['tag' => $preNode->tagName, 'pre' => $pre]);
 
         $tagName = Str::studly($preNode->tagName);
-        $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
+        $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$this->xpath, $this->cache, $this->prefix, $this->ttl]);
         $tag->process($preNode, $answer);
     }
 
@@ -82,19 +84,19 @@ class Parser
 
         // return $this->cache->get("{$this->prefix}_exp");
 
-        // return $xpath->query($exp)->item(0);
+        // return $this->xpath->query($exp)->item(0);
     }
 
-    protected function doHandle(\DOMXPath $xpath): ?string
+    protected function doHandle(): ?string
     {
         // Log::debug("Handle   -->", ['tag' => $node->tagName, 'exp' => $exp]);
 
         $exp = $this->cache->get("{$this->prefix}_exp");
 
-        $node = $xpath->query($exp)->item(0);
+        $node = $this->xpath->query($exp)->item(0);
 
         $tagName = Str::studly($node->tagName);
-        $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
+        $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$this->xpath, $this->cache, $this->prefix, $this->ttl]);
         $output = $tag->handle($node);
 
         $exp = $this->cache->get("{$this->prefix}_exp");
@@ -118,25 +120,25 @@ class Parser
         return call_user_func_array([new \ReflectionClass($fqcn), 'newInstance'], $args);
     }
 
-    public function parse(\DOMXPath $xpath, ?string $answer): string
+    public function parse(?string $answer): string
     {
         // $pre = $this->cache->get("{$this->prefix}_pre");
 
         // if($pre) {
-        //     $preNode = $xpath->query($pre)->item(0);
+        //     $preNode = $this->xpath->query($pre)->item(0);
 
         //     // Log::debug("Process  -->", ['tag' => $preNode->tagName, 'pre' => $pre]);
             
         //     $tagName = Str::studly($preNode->tagName);
-        //     $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
+        //     $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$this->xpath, $this->cache, $this->prefix, $this->ttl]);
         //     $tag->process($preNode, $answer);
         // }
 
-        $this->doProcess($xpath, $answer);
+        $this->doProcess($answer);
 
         $exp = $this->cache->get("{$this->prefix}_exp");
 
-        $node = $xpath->query($exp)->item(0);
+        $node = $this->xpath->query($exp)->item(0);
 
         if(! $node) {
             // Log::debug("Error    -->", ['tag' => '', 'exp' => $exp]);
@@ -154,7 +156,7 @@ class Parser
 
             // $exp = $this->cache->get("{$this->prefix}_exp");
 
-            // $node = $xpath->query($exp)->item(0);
+            // $node = $this->xpath->query($exp)->item(0);
 
             $this->setBreakpoint();
         }
@@ -162,7 +164,7 @@ class Parser
         // Log::debug("Handle   -->", ['tag' => $node->tagName, 'exp' => $exp]);
 
         // $tagName = Str::studly($node->tagName);
-        // $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
+        // $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$this->xpath, $this->cache, $this->prefix, $this->ttl]);
         // $output = $tag->handle($node);
 
         // $exp = $this->cache->get("{$this->prefix}_exp");
@@ -174,10 +176,10 @@ class Parser
         //     $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), $this->ttl);
         // }
 
-        $output = $this->doHandle($xpath);
+        $output = $this->doHandle();
 
         if(! $output) {
-            return $this->parse($xpath, $answer);
+            return $this->parse($answer);
         }
 
         return $output;
