@@ -49,7 +49,7 @@ class Parser
         $this->cache->put("{$this->prefix}_breakpoints", "[]", $this->ttl);
     }
 
-    protected function doProccess(\DOMXPath $xpath, ?string $answer): void
+    protected function doProcess(\DOMXPath $xpath, ?string $answer): void
     {
         $pre = $this->cache->get("{$this->prefix}_pre");
 
@@ -61,14 +61,14 @@ class Parser
 
         // Log::debug("Process  -->", ['tag' => $preNode->tagName, 'pre' => $pre]);
 
-        $tag = Str::studly($preNode->tagName);
-        $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tag}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
+        $tagName = Str::studly($preNode->tagName);
+        $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
         $tag->process($preNode, $answer);
     }
 
-    protected function breakAt(string $exp): \DomNode
+    protected function setBreakpoint(): void
     {
-        // $exp = $this->cache->get("{$this->prefix}_exp");
+        $exp = $this->cache->get("{$this->prefix}_exp");
 
         $breakpoints = (array) json_decode((string) $this->cache->get("{$this->prefix}_breakpoints"), true);
 
@@ -80,17 +80,21 @@ class Parser
         $this->cache->put("{$this->prefix}_exp", $breakpoint[$exp], $this->ttl);
         $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), $this->ttl);
 
-        $exp = $this->cache->get("{$this->prefix}_exp");
+        // return $this->cache->get("{$this->prefix}_exp");
 
-        return $xpath->query($exp)->item(0);
+        // return $xpath->query($exp)->item(0);
     }
 
-    protected function doHandle(\DomNode $node, \DOMXPath $xpath): ?string
+    protected function doHandle(\DOMXPath $xpath): ?string
     {
         // Log::debug("Handle   -->", ['tag' => $node->tagName, 'exp' => $exp]);
 
-        $tag = Str::studly($node->tagName);
-        $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tag}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
+        $exp = $this->cache->get("{$this->prefix}_exp");
+
+        $node = $xpath->query($exp)->item(0);
+
+        $tagName = Str::studly($node->tagName);
+        $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
         $output = $tag->handle($node);
 
         $exp = $this->cache->get("{$this->prefix}_exp");
@@ -105,7 +109,7 @@ class Parser
         return $output;
     }
 
-    protected function createTag($fqcn, array $args = []): Tag
+    protected function createTag(string $fqcn, array $args = []): Tag
     {
         if(! class_exists($fqcn)) {
             throw new \Exception("Missing class: {$fqcn}");
@@ -116,19 +120,19 @@ class Parser
 
     public function parse(\DOMXPath $xpath, ?string $answer): string
     {
-        $pre = $this->cache->get("{$this->prefix}_pre");
+        // $pre = $this->cache->get("{$this->prefix}_pre");
 
-        if($pre) {
-            $preNode = $xpath->query($pre)->item(0);
+        // if($pre) {
+        //     $preNode = $xpath->query($pre)->item(0);
 
-            // Log::debug("Process  -->", ['tag' => $preNode->tagName, 'pre' => $pre]);
+        //     // Log::debug("Process  -->", ['tag' => $preNode->tagName, 'pre' => $pre]);
             
-            $tag = Str::studly($preNode->tagName);
-            $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tag}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
-            $tag->process($preNode, $answer);
-        }
+        //     $tagName = Str::studly($preNode->tagName);
+        //     $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
+        //     $tag->process($preNode, $answer);
+        // }
 
-        // $this->doProcess($xpath, $answer);
+        $this->doProcess($xpath, $answer);
 
         $exp = $this->cache->get("{$this->prefix}_exp");
 
@@ -137,40 +141,40 @@ class Parser
         if(! $node) {
             // Log::debug("Error    -->", ['tag' => '', 'exp' => $exp]);
 
-            $exp = $this->cache->get("{$this->prefix}_exp");
-            $breakpoints = (array) json_decode((string) $this->cache->get("{$this->prefix}_breakpoints"), true);
+            // $exp = $this->cache->get("{$this->prefix}_exp");
+            // $breakpoints = (array) json_decode((string) $this->cache->get("{$this->prefix}_breakpoints"), true);
 
-            if(! $breakpoints || ! isset($breakpoints[0][$exp])) {
-                throw new \Exception("Missing tag");
-            }
+            // if(! $breakpoints || ! isset($breakpoints[0][$exp])) {
+            //     throw new \Exception("Missing tag");
+            // }
 
-            $breakpoint = array_shift($breakpoints);
-            $this->cache->put("{$this->prefix}_exp", $breakpoint[$exp], $this->ttl);
-            $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), $this->ttl);
+            // $breakpoint = array_shift($breakpoints);
+            // $this->cache->put("{$this->prefix}_exp", $breakpoint[$exp], $this->ttl);
+            // $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), $this->ttl);
 
-            $exp = $this->cache->get("{$this->prefix}_exp");
+            // $exp = $this->cache->get("{$this->prefix}_exp");
 
-            $node = $xpath->query($exp)->item(0);
+            // $node = $xpath->query($exp)->item(0);
 
-            // $node = $this->breakAt($exp);
+            $this->setBreakpoint();
         }
 
         // Log::debug("Handle   -->", ['tag' => $node->tagName, 'exp' => $exp]);
 
-        $tag = Str::studly($node->tagName);
-        $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tag}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
-        $output = $tag->handle($node);
+        // $tagName = Str::studly($node->tagName);
+        // $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
+        // $output = $tag->handle($node);
 
-        $exp = $this->cache->get("{$this->prefix}_exp");
-        $breakpoints = (array) json_decode((string) $this->cache->get("{$this->prefix}_breakpoints"), true);
+        // $exp = $this->cache->get("{$this->prefix}_exp");
+        // $breakpoints = (array) json_decode((string) $this->cache->get("{$this->prefix}_breakpoints"), true);
 
-        if($breakpoints && isset($breakpoints[0][$exp])) {
-            $breakpoint = array_shift($breakpoints);
-            $this->cache->put("{$this->prefix}_exp", $breakpoint[$exp], $this->ttl);
-            $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), $this->ttl);
-        }
+        // if($breakpoints && isset($breakpoints[0][$exp])) {
+        //     $breakpoint = array_shift($breakpoints);
+        //     $this->cache->put("{$this->prefix}_exp", $breakpoint[$exp], $this->ttl);
+        //     $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), $this->ttl);
+        // }
 
-        // $output = $this->doHandle($node, $xpath);
+        $output = $this->doHandle($xpath);
 
         if(! $output) {
             return $this->parse($xpath, $answer);
