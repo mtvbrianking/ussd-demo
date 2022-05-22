@@ -36,11 +36,13 @@ class ResponseTag implements Tag
 
         // Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
 
-        return $node->attributes->getNamedItem("text")->nodeValue;
+        $text = $node->attributes->getNamedItem("text")->nodeValue;
+        
+        throw new \Exception($text);
     }
 
     public function process(\DomNode $node, ?string $answer): void
     {
-        throw new \Exception("Expects no feedback.");
+        return;
     }
 }

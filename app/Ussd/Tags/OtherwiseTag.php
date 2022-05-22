@@ -50,6 +50,6 @@ class OtherwiseTag implements Tag
 
     public function process(\DomNode $node, ?string $answer): void
     {
-        throw new \Exception("Expects no feedback.");
+        return;
     }
 }

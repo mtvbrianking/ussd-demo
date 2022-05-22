@@ -77,7 +77,7 @@ class OptionsTag implements Tag
 
         if($answer == 0) {
             if($node->attributes->getNamedItem("noback")) {
-                throw new \Exception("Invalid choice.");
+                throw new \Exception("Invalid option.");
             }
 
             $exp = $this->goBack($pre, 2);
