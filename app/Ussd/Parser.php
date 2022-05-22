@@ -49,7 +49,7 @@ class Parser
         $this->cache->put("{$this->prefix}_breakpoints", "[]", $this->ttl);
     }
 
-    protected function doProccess(\DOMXPath $xpath, ?string $answer)
+    protected function doProccess(\DOMXPath $xpath, ?string $answer): void
     {
         $pre = $this->cache->get("{$this->prefix}_pre");
 
@@ -61,11 +61,9 @@ class Parser
 
         // Log::debug("Process  -->", ['tag' => $preNode->tagName, 'pre' => $pre]);
 
-        if($preNode->tagName == 'question') {
-            (new QuestionTag($xpath, $this->cache, $this->prefix))->process($preNode, $answer);
-        } else if($preNode->tagName == 'options') {
-            (new OptionsTag($xpath, $this->cache, $this->prefix))->process($preNode, $answer);
-        }
+        $tag = Str::studly($preNode->tagName);
+        $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tag}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
+        $tag->process($preNode, $answer);
     }
 
     protected function breakAt(string $exp): \DomNode
@@ -91,28 +89,9 @@ class Parser
     {
         // Log::debug("Handle   -->", ['tag' => $node->tagName, 'exp' => $exp]);
 
-        if($node->tagName == 'variable') {
-            $output = (new VariableTag($xpath, $this->cache, $this->prefix))->handle($node);
-        } else if($node->tagName == 'question') {
-            $output = (new QuestionTag($xpath, $this->cache, $this->prefix))->handle($node);
-        } else if($node->tagName == 'response') {
-            $output = (new ResponseTag($xpath, $this->cache, $this->prefix))->handle($node);
-            throw new \Exception($output);
-        } else if($node->tagName == 'options') {
-            $output = (new OptionsTag($xpath, $this->cache, $this->prefix))->handle($node);
-        } else if($node->tagName == 'option') {
-            $output = (new OptionTag($xpath, $this->cache, $this->prefix))->handle($node);
-        } else if($node->tagName == 'if') {
-            $output = (new IfTag($xpath, $this->cache, $this->prefix))->handle($node);
-        } else if($node->tagName == 'choose') {
-            $output = (new ChooseTag($xpath, $this->cache, $this->prefix))->handle($node);
-        } else if($node->tagName == 'when') {
-            $output = (new WhenTag($xpath, $this->cache, $this->prefix))->handle($node);
-        } else if($node->tagName == 'otherwise') {
-            $output = (new OtherwiseTag($xpath, $this->cache, $this->prefix))->handle($node);
-        } else {
-            throw new \Exception("Unknown tag: {$node->tagName}");
-        }
+        $tag = Str::studly($node->tagName);
+        $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tag}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
+        $output = $tag->handle($node);
 
         $exp = $this->cache->get("{$this->prefix}_exp");
         $breakpoints = (array) json_decode((string) $this->cache->get("{$this->prefix}_breakpoints"), true);
@@ -137,16 +116,6 @@ class Parser
 
     public function parse(\DOMXPath $xpath, ?string $answer): string
     {
-        $tag = Str::studly('if');
-
-        // $fqcn = __NAMESPACE__."\\Tags\\{$tag}Tag";
-
-        $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tag}Tag", [$xpath, $this->cache, $this->prefix, $this->ttl]);
-
-        // $exists = class_exists($fqcn) ? 'exists.' : 'doesn\'t exist.';
-
-        // throw new \Exception("'{$fqcn}' {$exists}");
-
         $pre = $this->cache->get("{$this->prefix}_pre");
 
         if($pre) {
