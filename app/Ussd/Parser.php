@@ -70,6 +70,8 @@ class Parser
 
     protected function setBreakpoint(): void
     {
+        // Log::debug("Error    -->", ['tag' => '', 'exp' => $exp]);
+
         $exp = $this->cache->get("{$this->prefix}_exp");
 
         $breakpoints = (array) json_decode((string) $this->cache->get("{$this->prefix}_breakpoints"), true);
@@ -81,10 +83,6 @@ class Parser
         $breakpoint = array_shift($breakpoints);
         $this->cache->put("{$this->prefix}_exp", $breakpoint[$exp], $this->ttl);
         $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), $this->ttl);
-
-        // return $this->cache->get("{$this->prefix}_exp");
-
-        // return $this->xpath->query($exp)->item(0);
     }
 
     protected function doHandle(): ?string
@@ -122,18 +120,6 @@ class Parser
 
     public function parse(?string $answer): string
     {
-        // $pre = $this->cache->get("{$this->prefix}_pre");
-
-        // if($pre) {
-        //     $preNode = $this->xpath->query($pre)->item(0);
-
-        //     // Log::debug("Process  -->", ['tag' => $preNode->tagName, 'pre' => $pre]);
-            
-        //     $tagName = Str::studly($preNode->tagName);
-        //     $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$this->xpath, $this->cache, $this->prefix, $this->ttl]);
-        //     $tag->process($preNode, $answer);
-        // }
-
         $this->doProcess($answer);
 
         $exp = $this->cache->get("{$this->prefix}_exp");
@@ -141,40 +127,8 @@ class Parser
         $node = $this->xpath->query($exp)->item(0);
 
         if(! $node) {
-            // Log::debug("Error    -->", ['tag' => '', 'exp' => $exp]);
-
-            // $exp = $this->cache->get("{$this->prefix}_exp");
-            // $breakpoints = (array) json_decode((string) $this->cache->get("{$this->prefix}_breakpoints"), true);
-
-            // if(! $breakpoints || ! isset($breakpoints[0][$exp])) {
-            //     throw new \Exception("Missing tag");
-            // }
-
-            // $breakpoint = array_shift($breakpoints);
-            // $this->cache->put("{$this->prefix}_exp", $breakpoint[$exp], $this->ttl);
-            // $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), $this->ttl);
-
-            // $exp = $this->cache->get("{$this->prefix}_exp");
-
-            // $node = $this->xpath->query($exp)->item(0);
-
             $this->setBreakpoint();
         }
-
-        // Log::debug("Handle   -->", ['tag' => $node->tagName, 'exp' => $exp]);
-
-        // $tagName = Str::studly($node->tagName);
-        // $tag = $this->createTag(__NAMESPACE__."\\Tags\\{$tagName}Tag", [$this->xpath, $this->cache, $this->prefix, $this->ttl]);
-        // $output = $tag->handle($node);
-
-        // $exp = $this->cache->get("{$this->prefix}_exp");
-        // $breakpoints = (array) json_decode((string) $this->cache->get("{$this->prefix}_breakpoints"), true);
-
-        // if($breakpoints && isset($breakpoints[0][$exp])) {
-        //     $breakpoint = array_shift($breakpoints);
-        //     $this->cache->put("{$this->prefix}_exp", $breakpoint[$exp], $this->ttl);
-        //     $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), $this->ttl);
-        // }
 
         $output = $this->doHandle();
 
