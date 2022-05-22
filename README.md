@@ -56,10 +56,12 @@ CON DummySACCO
 curl -i http://localhost:8000/api \
   -H 'Accept: application/json' \
   -H 'Content-Type: application/json' \
-  -d '{"session_id":"10050","answer":""}'
+  -d '{"session_id":"10050", "phone_number": "0732123321", "service_code": "305", "answer":""}'
 
 curl -i http://localhost:8000/api \
   -H 'Accept: application/json' \
   -H 'Content-Type: application/json' \
-  -d '{"session_id":"10050","answer":"jdoe"}'
+  -d '{"session_id":"10050", "phone_number": "0732123321", "service_code": "305", "answer":"1"}'
 ````
+
+{"message":"The given data was invalid.","errors":{"phone_number":["The phone number field is required."],"service_code":["The service code field is required."]}}
