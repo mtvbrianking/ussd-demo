@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Cache\Repository as CacheRepository;
+use Illuminate\Contracts\Cache\Repository as CacheContract;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -33,38 +33,42 @@ trait ExpManipulators
 
 interface Tag
 {
-    public function handle(\DOMNamedNodeMap $attributes) : ?string;
+    public function handle(\DomNode $node) : ?string;
 
-    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void;
+    public function process(\DomNode $node, ?string $answer): void;
 }
 
 class ResponseTag implements Tag
 {
     use ExpManipulators;
 
-    protected string $cache_key;
+    protected \DOMXPath $xpath;
+    protected CacheContract $cache;
+    protected string $prefix;
 
-    public function __construct($cache_key)
+    public function __construct(\DOMXPath $xpath, CacheContract $cache, string $prefix)
     {
-        $this->cache_key = $cache_key;
+        $this->xpath = $xpath;
+        $this->cache = $cache;
+        $this->prefix = $prefix;
     }
 
-    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    public function handle(\DomNode $node) : ?string
     {
-        $pre = Cache::get("{$this->cache_key}_pre");
-        $exp = Cache::get("{$this->cache_key}_exp");
+        $pre = $this->cache->get("{$this->prefix}_pre");
+        $exp = $this->cache->get("{$this->prefix}_exp");
 
         // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
-        Cache::put("{$this->cache_key}_pre", $exp);
-        Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+        $this->cache->put("{$this->prefix}_pre", $exp, 120);
+        $this->cache->put("{$this->prefix}_exp", $this->incExp($exp), 120);
 
         // Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
 
-        return $attributes->getNamedItem("text")->nodeValue;
+        return $node->attributes->getNamedItem("text")->nodeValue;
     }
 
-    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    public function process(\DomNode $node, ?string $answer): void
     {
         throw new \Exception("Expects no feedback.");
     }
@@ -74,34 +78,38 @@ class VariableTag implements Tag
 {
     use ExpManipulators;
 
-    protected string $cache_key;
+    protected \DOMXPath $xpath;
+    protected CacheContract $cache;
+    protected string $prefix;
 
-    public function __construct($cache_key)
+    public function __construct(\DOMXPath $xpath, CacheContract $cache, string $prefix)
     {
-        $this->cache_key = $cache_key;
+        $this->xpath = $xpath;
+        $this->cache = $cache;
+        $this->prefix = $prefix;
     }
 
-    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    public function handle(\DomNode $node) : ?string
     {
-        $name = $attributes->getNamedItem("name")->nodeValue;
-        $value = $attributes->getNamedItem("value")->nodeValue;
+        $name = $node->attributes->getNamedItem("name")->nodeValue;
+        $value = $node->attributes->getNamedItem("value")->nodeValue;
 
-        Cache::put("{$this->cache_key}_{$name}", $value);
+        $this->cache->put("{$this->prefix}_{$name}", $value, 120);
 
-        $pre = Cache::get("{$this->cache_key}_pre");
-        $exp = Cache::get("{$this->cache_key}_exp");
+        $pre = $this->cache->get("{$this->prefix}_pre");
+        $exp = $this->cache->get("{$this->prefix}_exp");
 
         // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
-        Cache::put("{$this->cache_key}_pre", $exp);
-        Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+        $this->cache->put("{$this->prefix}_pre", $exp, 120);
+        $this->cache->put("{$this->prefix}_exp", $this->incExp($exp), 120);
 
         // Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
 
         return '';
     }
 
-    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    public function process(\DomNode $node, ?string $answer): void
     {
         throw new \Exception("Expects no feedback.");
     }
@@ -111,37 +119,41 @@ class QuestionTag implements Tag
 {
     use ExpManipulators;
 
-    protected string $cache_key;
+    protected \DOMXPath $xpath;
+    protected CacheContract $cache;
+    protected string $prefix;
 
-    public function __construct($cache_key)
+    public function __construct(\DOMXPath $xpath, CacheContract $cache, string $prefix)
     {
-        $this->cache_key = $cache_key;
+        $this->xpath = $xpath;
+        $this->cache = $cache;
+        $this->prefix = $prefix;
     }
 
-    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    public function handle(\DomNode $node) : ?string
     {
-        $pre = Cache::get("{$this->cache_key}_pre");
-        $exp = Cache::get("{$this->cache_key}_exp");
+        $pre = $this->cache->get("{$this->prefix}_pre");
+        $exp = $this->cache->get("{$this->prefix}_exp");
 
         // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
-        Cache::put("{$this->cache_key}_pre", $exp);
-        Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+        $this->cache->put("{$this->prefix}_pre", $exp, 120);
+        $this->cache->put("{$this->prefix}_exp", $this->incExp($exp), 120);
 
         // Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
 
-        return $attributes->getNamedItem("text")->nodeValue;
+        return $node->attributes->getNamedItem("text")->nodeValue;
     }
 
-    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    public function process(\DomNode $node, ?string $answer): void
     {
         if($answer == '') {
             throw new \Exception("Invalid answer.");
         }
 
-        $name = $attributes->getNamedItem("name")->nodeValue;
+        $name = $node->attributes->getNamedItem("name")->nodeValue;
 
-        Cache::put("{$this->cache_key}_{$name}", $answer);
+        $this->cache->put("{$this->prefix}_{$name}", $answer, 120);
     }
 }
 
@@ -149,27 +161,18 @@ class OptionsTag implements Tag
 {
     use ExpManipulators;
 
-    protected string $cache_key;
     protected \DOMXPath $xpath;
+    protected CacheContract $cache;
+    protected string $prefix;
 
-    public function __construct($cache_key, ?\DOMXPath $xpath)
+    public function __construct(\DOMXPath $xpath, CacheContract $cache, string $prefix)
     {
-        $this->cache_key = $cache_key;
         $this->xpath = $xpath;
+        $this->cache = $cache;
+        $this->prefix = $prefix;
     }
 
-    protected function decExp(string $exp, int $step = 1): string
-    {
-        $exp = preg_replace_callback("|(\d+)(?!.*\d)|", function($matches) use($step) { 
-            return $matches[1] - $step; 
-        }, $exp);
-
-        preg_match('/(\d+)(?!.*\d)/', $exp, $matches);
-
-        return $matches[1] > 0 ? $exp : '';
-    }
-
-    protected function goBack(string $exp, $steps = 1): string
+    protected function goBack(string $exp, int $steps = 1): string
     {
         $count = 0;
 
@@ -180,14 +183,14 @@ class OptionsTag implements Tag
         return $count === 1 ? $exp : '';
     }
 
-    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    public function handle(\DomNode $node) : ?string
     {
-        $header = $attributes->getNamedItem("header")->nodeValue;
+        $header = $node->attributes->getNamedItem("header")->nodeValue;
 
         $body = '';
 
-        $pre = Cache::get("{$this->cache_key}_pre");
-        $exp = Cache::get("{$this->cache_key}_exp");
+        $pre = $this->cache->get("{$this->prefix}_pre");
+        $exp = $this->cache->get("{$this->prefix}_exp");
 
         // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
@@ -198,30 +201,30 @@ class OptionsTag implements Tag
             $body .= "\n{$pos}) " . $optionEl->attributes->getNamedItem("text")->nodeValue;
         }
 
-        if(! $attributes->getNamedItem("noback")) {
+        if(! $node->attributes->getNamedItem("noback")) {
             $body .= "\n0) Back";
         }
 
-        Cache::put("{$this->cache_key}_pre", $exp);
-        Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+        $this->cache->put("{$this->prefix}_pre", $exp, 120);
+        $this->cache->put("{$this->prefix}_exp", $this->incExp($exp), 120);
         // Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => $this->incExp($exp)]);
 
         return "{$header}{$body}";
     }
 
-    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    public function process(\DomNode $node, ?string $answer): void
     {
         if($answer == '') {
             throw new \Exception("Invalid answer.");
         }
 
-        $pre = Cache::get("{$this->cache_key}_pre");
-        $exp = Cache::get("{$this->cache_key}_exp");
+        $pre = $this->cache->get("{$this->prefix}_pre");
+        $exp = $this->cache->get("{$this->prefix}_exp");
 
         // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
         if($answer == 0) {
-            if($attributes->getNamedItem("noback")) {
+            if($node->attributes->getNamedItem("noback")) {
                 throw new \Exception("Invalid choice.");
             }
 
@@ -229,7 +232,7 @@ class OptionsTag implements Tag
 
             // Log::debug("GoBack   -->", ['exp' => $exp]);
 
-            Cache::put("{$this->cache_key}_exp", $exp);
+            $this->cache->put("{$this->prefix}_exp", $exp, 120);
 
             return;
         }
@@ -238,7 +241,7 @@ class OptionsTag implements Tag
             throw new \Exception("Invalid option.");
         }
 
-        Cache::put("{$this->cache_key}_exp", "{$pre}/*[{$answer}]");
+        $this->cache->put("{$this->prefix}_exp", "{$pre}/*[{$answer}]", 120);
         // Log::debug("CheckOut -->", ['pre' => $pre, 'exp' => "{$pre}/*[{$answer}]"]);
     }
 }
@@ -247,20 +250,22 @@ class OptionTag implements Tag
 {
     use ExpManipulators;
 
-    protected string $cache_key;
     protected \DOMXPath $xpath;
+    protected CacheContract $cache;
+    protected string $prefix;
 
-    public function __construct($cache_key, ?\DOMXPath $xpath)
+    public function __construct(\DOMXPath $xpath, CacheContract $cache, string $prefix)
     {
-        $this->cache_key = $cache_key;
         $this->xpath = $xpath;
+        $this->cache = $cache;
+        $this->prefix = $prefix;
     }
 
-    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    public function handle(\DomNode $node) : ?string
     {
-        $pre = Cache::get("{$this->cache_key}_pre");
-        $exp = Cache::get("{$this->cache_key}_exp");
-        $breakpoints = json_decode(Cache::get("{$this->cache_key}_breakpoints"), true);
+        $pre = $this->cache->get("{$this->prefix}_pre");
+        $exp = $this->cache->get("{$this->prefix}_exp");
+        $breakpoints = json_decode($this->cache->get("{$this->prefix}_breakpoints"), true);
 
         // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
@@ -268,19 +273,19 @@ class OptionTag implements Tag
         $break = $this->incExp("{$exp}/*[1]", $no_of_tags);
 
         array_unshift($breakpoints, [$break => $this->incExp($pre)]);
-        Cache::put("{$this->cache_key}_breakpoints", json_encode($breakpoints));
+        $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), 120);
 
         // Log::debug("BP       -->", ['break' => $break, 'resume' => $this->incExp($pre)]);
 
-        Cache::put("{$this->cache_key}_pre", $exp);
-        Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");
+        $this->cache->put("{$this->prefix}_pre", $exp, 120);
+        $this->cache->put("{$this->prefix}_exp", "{$exp}/*[1]", 120);
 
         // Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => "{$exp}/*[1]"]);
 
         return '';
     }
 
-    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    public function process(\DomNode $node, ?string $answer): void
     {
         throw new \Exception("Expects no feedback.");
     }
@@ -290,45 +295,47 @@ class IfTag implements Tag
 {
     use ExpManipulators;
 
-    protected string $cache_key;
     protected \DOMXPath $xpath;
+    protected CacheContract $cache;
+    protected string $prefix;
 
-    public function __construct($cache_key, ?\DOMXPath $xpath)
+    public function __construct(\DOMXPath $xpath, CacheContract $cache, string $prefix)
     {
-        $this->cache_key = $cache_key;
         $this->xpath = $xpath;
+        $this->cache = $cache;
+        $this->prefix = $prefix;
     }
 
-    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    public function handle(\DomNode $node) : ?string
     {
-        $key = $attributes->getNamedItem("key")->nodeValue;
-        $value = $attributes->getNamedItem("value")->nodeValue;
+        $key = $node->attributes->getNamedItem("key")->nodeValue;
+        $value = $node->attributes->getNamedItem("value")->nodeValue;
 
-        if(Cache::get("{$this->cache_key}_{$key}") != $value) {
-            $exp = Cache::get("{$this->cache_key}_exp");
+        if($this->cache->get("{$this->prefix}_{$key}") != $value) {
+            $exp = $this->cache->get("{$this->prefix}_exp");
 
-            Cache::put("{$this->cache_key}_pre", $exp);
-            Cache::put("{$this->cache_key}_exp", $this->incExp($exp));
+            $this->cache->put("{$this->prefix}_pre", $exp, 120);
+            $this->cache->put("{$this->prefix}_exp", $this->incExp($exp), 120);
 
             return '';
         }
 
-        $pre = Cache::get("{$this->cache_key}_pre");
-        $exp = Cache::get("{$this->cache_key}_exp");
-        $breakpoints = json_decode(Cache::get("{$this->cache_key}_breakpoints"), true);
+        $pre = $this->cache->get("{$this->prefix}_pre");
+        $exp = $this->cache->get("{$this->prefix}_exp");
+        $breakpoints = json_decode($this->cache->get("{$this->prefix}_breakpoints"), true);
 
-        Cache::put("{$this->cache_key}_pre", $exp);
-        Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");
+        $this->cache->put("{$this->prefix}_pre", $exp, 120);
+        $this->cache->put("{$this->prefix}_exp", "{$exp}/*[1]", 120);
 
         $no_of_tags = $this->xpath->query("{$exp}/*")->length;
         $break = $this->incExp("{$exp}/*[1]", $no_of_tags);
         array_unshift($breakpoints, [$break => $this->incExp($exp)]);
-        Cache::put("{$this->cache_key}_breakpoints", json_encode($breakpoints));
+        $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), 120);
 
         return '';
     }
 
-    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    public function process(\DomNode $node, ?string $answer): void
     {
         throw new \Exception("Expects no feedback.");
     }
@@ -338,19 +345,21 @@ class ChooseTag implements Tag
 {
     use ExpManipulators;
 
-    protected string $cache_key;
     protected \DOMXPath $xpath;
+    protected CacheContract $cache;
+    protected string $prefix;
 
-    public function __construct($cache_key, ?\DOMXPath $xpath)
+    public function __construct(\DOMXPath $xpath, CacheContract $cache, string $prefix)
     {
-        $this->cache_key = $cache_key;
         $this->xpath = $xpath;
+        $this->cache = $cache;
+        $this->prefix = $prefix;
     }
 
-    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    public function handle(\DomNode $node) : ?string
     {
-        $pre = Cache::get("{$this->cache_key}_pre");
-        $exp = Cache::get("{$this->cache_key}_exp");
+        $pre = $this->cache->get("{$this->prefix}_pre");
+        $exp = $this->cache->get("{$this->prefix}_exp");
 
         // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
@@ -365,7 +374,7 @@ class ChooseTag implements Tag
             $key = $whenEl->attributes->getNamedItem("key")->nodeValue;
             $val = $whenEl->attributes->getNamedItem("value")->nodeValue;
 
-            $var = Cache::get("{$this->cache_key}_{$key}");
+            $var = $this->cache->get("{$this->prefix}_{$key}");
 
             if($var != $val) {
                 continue;
@@ -373,8 +382,8 @@ class ChooseTag implements Tag
 
             $isMatched = true;
 
-            Cache::put("{$this->cache_key}_pre", $exp);
-            Cache::put("{$this->cache_key}_exp", "{$exp}/*[{$pos}]");
+            $this->cache->put("{$this->prefix}_pre", $exp, 120);
+            $this->cache->put("{$this->prefix}_exp", "{$exp}/*[{$pos}]", 120);
 
             break;
         }
@@ -391,15 +400,15 @@ class ChooseTag implements Tag
 
         ++$pos;
 
-        Cache::put("{$this->cache_key}_pre", $exp);
-        Cache::put("{$this->cache_key}_exp", "{$exp}/*[{$pos}]");
+        $this->cache->put("{$this->prefix}_pre", $exp, 120);
+        $this->cache->put("{$this->prefix}_exp", "{$exp}/*[{$pos}]", 120);
 
         // Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => "{$exp}/*[{$pos}]"]);
 
         return '';
     }
 
-    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    public function process(\DomNode $node, ?string $answer): void
     {
         throw new \Exception("Expects no feedback.");
     }
@@ -409,20 +418,22 @@ class WhenTag implements Tag
 {
     use ExpManipulators;
 
-    protected string $cache_key;
     protected \DOMXPath $xpath;
+    protected CacheContract $cache;
+    protected string $prefix;
 
-    public function __construct($cache_key, ?\DOMXPath $xpath)
+    public function __construct(\DOMXPath $xpath, CacheContract $cache, string $prefix)
     {
-        $this->cache_key = $cache_key;
         $this->xpath = $xpath;
+        $this->cache = $cache;
+        $this->prefix = $prefix;
     }
 
-    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    public function handle(\DomNode $node) : ?string
     {
-        $pre = Cache::get("{$this->cache_key}_pre");
-        $exp = Cache::get("{$this->cache_key}_exp");
-        $breakpoints = json_decode(Cache::get("{$this->cache_key}_breakpoints"), true);
+        $pre = $this->cache->get("{$this->prefix}_pre");
+        $exp = $this->cache->get("{$this->prefix}_exp");
+        $breakpoints = json_decode($this->cache->get("{$this->prefix}_breakpoints"), true);
 
         // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
@@ -430,19 +441,19 @@ class WhenTag implements Tag
         $break = $this->incExp("{$exp}/*[1]", $no_of_tags);
 
         array_unshift($breakpoints, [$break => $this->incExp($pre)]);
-        Cache::put("{$this->cache_key}_breakpoints", json_encode($breakpoints));
+        $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), 120);
 
         // Log::debug("BP       -->", ['break' => $break, 'resume' => $this->incExp($pre)]);
 
-        Cache::put("{$this->cache_key}_pre", $exp);
-        Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");
+        $this->cache->put("{$this->prefix}_pre", $exp, 120);
+        $this->cache->put("{$this->prefix}_exp", "{$exp}/*[1]", 120);
 
         // Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => "{$exp}/*[1]"]);
 
         return '';
     }
 
-    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    public function process(\DomNode $node, ?string $answer): void
     {
         throw new \Exception("Expects no feedback.");
     }
@@ -452,20 +463,22 @@ class OtherwiseTag implements Tag
 {
     use ExpManipulators;
 
-    protected string $cache_key;
     protected \DOMXPath $xpath;
+    protected CacheContract $cache;
+    protected string $prefix;
 
-    public function __construct($cache_key, ?\DOMXPath $xpath)
+    public function __construct(\DOMXPath $xpath, CacheContract $cache, string $prefix)
     {
-        $this->cache_key = $cache_key;
         $this->xpath = $xpath;
+        $this->cache = $cache;
+        $this->prefix = $prefix;
     }
 
-    public function handle(\DOMNamedNodeMap $attributes) : ?string
+    public function handle(\DomNode $node) : ?string
     {
-        $pre = Cache::get("{$this->cache_key}_pre");
-        $exp = Cache::get("{$this->cache_key}_exp");
-        $breakpoints = json_decode(Cache::get("{$this->cache_key}_breakpoints"), true);
+        $pre = $this->cache->get("{$this->prefix}_pre");
+        $exp = $this->cache->get("{$this->prefix}_exp");
+        $breakpoints = json_decode($this->cache->get("{$this->prefix}_breakpoints"), true);
 
         // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
 
@@ -473,21 +486,115 @@ class OtherwiseTag implements Tag
         $break = $this->incExp("{$exp}/*[1]", $no_of_tags);
 
         array_unshift($breakpoints, [$break => $this->incExp($pre)]);
-        Cache::put("{$this->cache_key}_breakpoints", json_encode($breakpoints));
+        $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), 120);
 
         // Log::debug("BP       -->", ['break' => $break, 'resume' => $this->incExp($pre)]);
 
-        Cache::put("{$this->cache_key}_pre", $exp);
-        Cache::put("{$this->cache_key}_exp", "{$exp}/*[1]");
+        $this->cache->put("{$this->prefix}_pre", $exp, 120);
+        $this->cache->put("{$this->prefix}_exp", "{$exp}/*[1]", 120);
 
         // Log::debug("CheckOut -->", ['pre' => $exp, 'exp' => "{$exp}/*[1]"]);
 
         return '';
     }
 
-    public function process(\DOMNamedNodeMap $attributes, ?string $answer): void
+    public function process(\DomNode $node, ?string $answer): void
     {
         throw new \Exception("Expects no feedback.");
+    }
+}
+
+class Parser
+{
+    protected CacheContract $cache;
+    protected string $prefix;
+
+    public function __construct(CacheContract $cache, string $prefix)
+    {
+        $this->cache = $cache;
+        $this->prefix = $prefix;
+    }
+
+    public function parse(\DOMXPath $xpath, ?string $answer): string
+    {
+        // $prefix = "{$request->phone_number}_{$request->service_code}";
+
+        $pre = $this->cache->get("{$this->prefix}_pre");
+
+        if($pre) {
+            $preNode = $xpath->query($pre)->item(0);
+
+            // Log::debug("Process  -->", ['tag' => $preNode->tagName, 'pre' => $pre]);
+
+            if($preNode->tagName == 'question') {
+                (new QuestionTag($xpath, $this->cache, $this->prefix))->process($preNode, $answer);
+            } else if($preNode->tagName == 'options') {
+                (new OptionsTag($xpath, $this->cache, $this->prefix))->process($preNode, $answer);
+            }
+        }
+
+        $exp = $this->cache->get("{$this->prefix}_exp");
+
+        $node = $xpath->query($exp)->item(0);
+
+        if(! $node) {
+            // Log::debug("Error    -->", ['tag' => '', 'exp' => $exp]);
+
+            $exp = $this->cache->get("{$this->prefix}_exp");
+            $breakpoints = json_decode($this->cache->get("{$this->prefix}_breakpoints"), true);
+
+            if(! $breakpoints || ! isset($breakpoints[0][$exp])) {
+                throw new \Exception("Missing tag");
+            }
+
+            $breakpoint = array_shift($breakpoints);
+            $this->cache->put("{$this->prefix}_exp", $breakpoint[$exp], 120);
+            $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), 120);
+
+            $exp = $this->cache->get("{$this->prefix}_exp");
+
+            $node = $xpath->query($exp)->item(0);
+        }
+
+        // Log::debug("Handle   -->", ['tag' => $node->tagName, 'exp' => $exp]);
+
+        if($node->tagName == 'variable') {
+            $output = (new VariableTag($xpath, $this->cache, $this->prefix))->handle($node);
+        } else if($node->tagName == 'question') {
+            $output = (new QuestionTag($xpath, $this->cache, $this->prefix))->handle($node);
+        } else if($node->tagName == 'response') {
+            $output = (new ResponseTag($xpath, $this->cache, $this->prefix))->handle($node);
+            throw new \Exception($output);
+        } else if($node->tagName == 'options') {
+            $output = (new OptionsTag($xpath, $this->cache, $this->prefix))->handle($node);
+        } else if($node->tagName == 'option') {
+            $output = (new OptionTag($xpath, $this->cache, $this->prefix))->handle($node);
+        } else if($node->tagName == 'if') {
+            $output = (new IfTag($xpath, $this->cache, $this->prefix))->handle($node);
+        } else if($node->tagName == 'choose') {
+            $output = (new ChooseTag($xpath, $this->cache, $this->prefix))->handle($node);
+        } else if($node->tagName == 'when') {
+            $output = (new WhenTag($xpath, $this->cache, $this->prefix))->handle($node);
+        } else if($node->tagName == 'otherwise') {
+            $output = (new OtherwiseTag($xpath, $this->cache, $this->prefix))->handle($node);
+        } else {
+            throw new \Exception("Unknown tag: {$node->tagName}");
+        }
+
+        $exp = $this->cache->get("{$this->prefix}_exp");
+        $breakpoints = json_decode($this->cache->get("{$this->prefix}_breakpoints"), true);
+
+        if($breakpoints && isset($breakpoints[0][$exp])) {
+            $breakpoint = array_shift($breakpoints);
+            $this->cache->put("{$this->prefix}_exp", $breakpoint[$exp], 120);
+            $this->cache->put("{$this->prefix}_breakpoints", json_encode($breakpoints), 120);
+        }
+
+        if(! $output) {
+            return $this->parse($xpath, $answer);
+        }
+
+        return $output;
     }
 }
 
@@ -496,94 +603,12 @@ class UssdController extends Controller
     const FC = 'continue';
     const FB = 'break';
 
-    protected CacheRepository $cache;
+    protected CacheContract $cache;
 
-    public function __construct(CacheRepository $cache)
+    public function __construct(CacheContract $cache)
     {
         $this->cache = $cache;
         // $this->middleware('log:api');
-    }
-
-    public function walk($request, $xpath)
-    {
-        $cache_key = "{$request->phone_number}_{$request->service_code}";
-
-        $pre = $this->cache->get("{$cache_key}_pre");
-
-        if($pre) {
-            $preNode = $xpath->query($pre)->item(0);
-
-            // Log::debug("Process  -->", ['tag' => $preNode->tagName, 'pre' => $pre]);
-
-            if($preNode->tagName == 'question') {
-                (new QuestionTag($cache_key))->process($preNode->attributes, $request->answer);
-            } else if($preNode->tagName == 'options') {
-                (new OptionsTag($cache_key, $xpath))->process($preNode->attributes, $request->answer);
-            }
-        }
-
-        $exp = $this->cache->get("{$cache_key}_exp");
-
-        $node = $xpath->query($exp)->item(0);
-
-        if(! $node) {
-            // Log::debug("Error    -->", ['tag' => '', 'exp' => $exp]);
-
-            $exp = $this->cache->get("{$cache_key}_exp");
-            $breakpoints = json_decode($this->cache->get("{$cache_key}_breakpoints"), true);
-
-            if(! $breakpoints || ! isset($breakpoints[0][$exp])) {
-                throw new \Exception("Missing tag");
-            }
-
-            $breakpoint = array_shift($breakpoints);
-            $this->cache->put("{$cache_key}_exp", $breakpoint[$exp]);
-            $this->cache->put("{$cache_key}_breakpoints", json_encode($breakpoints));
-
-            $exp = $this->cache->get("{$cache_key}_exp");
-
-            $node = $xpath->query($exp)->item(0);
-        }
-
-        // Log::debug("Handle   -->", ['tag' => $node->tagName, 'exp' => $exp]);
-
-        if($node->tagName == 'variable') {
-            $output = (new VariableTag($cache_key))->handle($node->attributes);
-        } else if($node->tagName == 'question') {
-            $output = (new QuestionTag($cache_key))->handle($node->attributes);
-        } else if($node->tagName == 'response') {
-            $output = (new ResponseTag($cache_key))->handle($node->attributes);
-            throw new \Exception($output);
-        } else if($node->tagName == 'options') {
-            $output = (new OptionsTag($cache_key, $xpath))->handle($node->attributes);
-        } else if($node->tagName == 'option') {
-            $output = (new OptionTag($cache_key, $xpath))->handle($node->attributes);
-        } else if($node->tagName == 'if') {
-            $output = (new IfTag($cache_key, $xpath))->handle($node->attributes);
-        } else if($node->tagName == 'choose') {
-            $output = (new ChooseTag($cache_key, $xpath))->handle($node->attributes);
-        } else if($node->tagName == 'when') {
-            $output = (new WhenTag($cache_key, $xpath))->handle($node->attributes);
-        } else if($node->tagName == 'otherwise') {
-            $output = (new OtherwiseTag($cache_key, $xpath))->handle($node->attributes);
-        } else {
-            throw new \Exception("Unknown tag: {$node->tagName}");
-        }
-
-        $exp = $this->cache->get("{$cache_key}_exp");
-        $breakpoints = json_decode($this->cache->get("{$cache_key}_breakpoints"), true);
-
-        if($breakpoints && isset($breakpoints[0][$exp])) {
-            $breakpoint = array_shift($breakpoints);
-            $this->cache->put("{$cache_key}_exp", $breakpoint[$exp]);
-            $this->cache->put("{$cache_key}_breakpoints", json_encode($breakpoints));
-        }
-
-        if(! $output) {
-            return $this->walk($request, $xpath);
-        }
-
-        return $output;
     }
     
     public function __invoke(Request $request): JsonResponse
@@ -615,28 +640,30 @@ class UssdController extends Controller
 
         // ...
 
-        $cache_key = "{$request->phone_number}_{$request->service_code}";
+        $prefix = "{$request->phone_number}_{$request->service_code}";
 
-        $preSessionId = $this->cache->get("{$cache_key}_session_id");
+        $preSessionId = $this->cache->get("{$prefix}_session_id");
 
         if($preSessionId != $request->session_id) {
             if($preSessionId != '') {
-                $affected = DB::connection('sqlite_cache')->table('cache')->where('key', 'like', "{$cache_key}_%")->delete();
+                $affected = DB::connection('sqlite_cache')->table('cache')->where('key', 'like', "{$prefix}_%")->delete();
             }
 
-            $this->cache->put("{$cache_key}_session_id", $request->session_id);
+            $this->cache->put("{$prefix}_session_id", $request->session_id, 120);
 
-            $this->cache->put("{$cache_key}_pre", '');
-            $this->cache->put("{$cache_key}_exp", "/menus/menu[@name='customer']/*[1]");
-            $this->cache->put("{$cache_key}_breakpoints", "[]");
+            $this->cache->put("{$prefix}_pre", '', 120);
+            $this->cache->put("{$prefix}_exp", "/menus/menu[@name='customer']/*[1]", 120);
+            $this->cache->put("{$prefix}_breakpoints", "[]", 120);
         }
 
         // ...
 
-        $session_id = $this->cache->get("{$cache_key}_session_id");
+        $session_id = $this->cache->get("{$prefix}_session_id");
 
         try {
-            $output = $this->walk($request, $xpath);
+            $parser = new Parser($this->cache, $prefix);
+
+            $output = $parser->parse($xpath, $request->answer);
         } catch(\Exception $ex) {
             return response()->json([
                 'flow' => self::FB, 
