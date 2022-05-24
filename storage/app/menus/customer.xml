@@ -6,7 +6,7 @@
         <question name="password" text="Enter password: "/>
         <response text="End here..."/> -->
 
-        <options header="Choose gender" noback="no">
+        <!-- <options header="Choose gender" noback="no">
             <option text="Male">
                 <variable name="gender" value="M"/>
             </option>
@@ -28,7 +28,11 @@
             <otherwise>
                 <question name="hobby" text="Hobbies? "/>
             </otherwise>
-        </choose>
+        </choose> -->
+
+        <variable name="amount" value="12500"/>
+
+        <action name="format-money" currency="KSH"/>
 
         <response text="Thank you."/>
 
