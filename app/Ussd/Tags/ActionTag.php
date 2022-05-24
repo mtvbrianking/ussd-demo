@@ -42,7 +42,6 @@ class ActionTag implements Tag
         $action = $this->createAction("App\\Ussd\\Actions\\{$className}Action", [$this->cache, $this->prefix, $this->ttl]);
         $action($node);
 
-        // throw new \Exception("<action name=\"{$actionName}\"/>");
         // throw new \Exception($this->cache->get("{$this->prefix}_amount"));
 
         $pre = $this->cache->get("{$this->prefix}_pre");

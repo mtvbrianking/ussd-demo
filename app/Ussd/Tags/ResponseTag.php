@@ -38,7 +38,9 @@ class ResponseTag implements Tag
 
         $text = $node->attributes->getNamedItem("text")->nodeValue;
         
-        throw new \Exception($text);
+        $output = $this->translate($text);
+
+        throw new \Exception($output);
     }
 
     public function process(\DomNode $node, ?string $answer): void

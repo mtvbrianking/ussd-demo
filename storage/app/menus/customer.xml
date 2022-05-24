@@ -32,9 +32,9 @@
 
         <variable name="amount" value="12500"/>
 
-        <action name="format-money" currency="KSH"/>
+        <action name="format-money" currency="USD"/>
 
-        <response text="Thank you."/>
+        <response text="Amount = {amount} {not-found}"/>
 
         <!-- <variable name="provider" value="MTN"/>
         <options header="Buy Bundles" noback="no">

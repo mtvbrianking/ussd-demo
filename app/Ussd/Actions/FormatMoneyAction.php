@@ -42,7 +42,6 @@ class FormatMoneyAction
         $this->amount = (float) $amount;
 
         $this->currency = $node->attributes->getNamedItem("currency")->nodeValue
-            ?: $this->cache->get("{$this->prefix}_currency")
-            ?: 'UGX';
+            ?? $this->cache->get("{$this->prefix}_currency", 'UGX');
     }
 }
