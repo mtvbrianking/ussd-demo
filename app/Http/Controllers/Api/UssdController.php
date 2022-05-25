@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Ussd\Parser;
+use Bmatovu\Ussd\Parser;
 use Illuminate\Contracts\Cache\Repository as CacheContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
