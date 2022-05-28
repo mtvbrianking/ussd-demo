@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 
+from requests.exceptions import HTTPError
 import argparse
 import requests
 import uuid
 import sys
+import os
 
 def ussd(url, data):
-    return requests.post(url, data)
+    try:
+        return requests.post(url, data)
+    except HTTPError as http_err:
+        print(http_err)
+        sys.exit(0);
+    except Exception as ex:
+        print(ex)
+        sys.exit(0);
 
 def clean(ussdCode):
     return ussdCode.lstrip('*').rstrip('#')
@@ -15,40 +24,40 @@ def stop(responseText):
     cmd = responseText[0:4]
     return cmd == 'END '
 
-if __name__ == "__main__":
+def main():
 
     session_id = str(uuid.uuid4());
 
     parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--api_uri', help="API URI", type=str, default="http://localhost:8000/api", metavar='')
-    parser.add_argument('--number', help="Phone number", type=str, default="+256772100104", metavar='')
-    parser.add_argument('--network_code', help="Network code", type=str, default="6001", metavar='')
-    parser.add_argument('--service_code', help="USSD shortcode", type=str, default="*308#", metavar='')
-    parser.add_argument('--dail', help="User input", type=str, default="", metavar='')
-    parser.add_argument('--session_id', help="Session ID", type=str, default=session_id, metavar='')
-    parser.add_argument('--version', action='version', version='%(prog)s v1.0 by eibatrm', help="Show program's info")
-    parser.add_argument('--help', action='help', default=argparse.SUPPRESS, help='Show usage')
+    parser.add_argument('phone', action="store", help="MSISDN")
+    parser.add_argument('--dail', help="User request", type=str, default="*308#", metavar='')
+    parser.add_argument('--service', help="USSD shortcode", type=str, default="*308#", metavar='')
+    parser.add_argument('--network', help="Network code", type=str, default="6001", metavar='')
+    parser.add_argument('--session', help="Session ID *Auto Generated", type=str, default="", metavar='')
+    parser.add_argument('--api', help="API URI", type=str, default="http://localhost:8000/api", metavar='')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s v1.0 by bmatovu', help="Show program's info")
+    parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS, help='Show usage')
 
     args = parser.parse_args()
 
     # ........................................................
 
-    service_code = clean(args.service_code)
+    service_code = clean(args.service)
 
     dail = clean(args.dail)
 
     answers = clean(dail.replace(service_code, ''))
 
     data = {
-        'sessionId': args.session_id,
-        'networkCode': args.network_code,
-        'phoneNumber': args.number,
+        'sessionId': session_id,
+        'networkCode': args.network,
+        'phoneNumber': args.phone,
         'input': dail,
         'serviceCode': service_code,
         'text': answers
     }
 
-    response = ussd(args.api_uri, data)
+    response = ussd(args.api, data)
 
     if stop(response.text):
         print("\n" + response.text[4:])
@@ -61,19 +70,23 @@ if __name__ == "__main__":
     while True:
         dail += "*" + answer
 
-        data = {
-            'sessionId': args.session_id,
-            'networkCode': args.network_code,
-            'phoneNumber': args.number,
-            'input': dail,
-            'serviceCode': service_code,
-            'text': answer
-        }
+        data['input'] = dail
+        data['text'] = answer
 
-        response = ussd(args.api_uri, data)
+        response = ussd(args.api, data)
 
         if stop(response.text):
             print("\n" + response.text[4:])
             break;
 
         answer = input("\n" + response.text[4:] + "\n")
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        print('Exiting...')
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
