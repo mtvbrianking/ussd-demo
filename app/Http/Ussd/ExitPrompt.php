@@ -15,7 +15,7 @@ class ExitPrompt extends State
 
         $this->menu->text('END ')->text($exitNote);
 
-        $this->flushCache();
+        // $this->flushCache();
     }
 
     protected function afterRendering(string $argument): void

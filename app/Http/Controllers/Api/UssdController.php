@@ -3,62 +3,51 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Bmatovu\Ussd\Parser;
-use Illuminate\Contracts\Cache\Repository as CacheContract;
+use App\Http\Ussd\CheckUserAction;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Response;
+use Sparors\Ussd\Facades\Ussd;
 
 class UssdController extends Controller
 {
-    const FC = 'continue';
-    const FB = 'break';
-
-    protected CacheContract $cache;
-
-    public function __construct(CacheContract $cache)
+    public function __construct()
     {
-        $this->cache = $cache;
-        // $this->middleware('log:api');
+        $this->middleware('log:api');
     }
-    
-    public function __invoke(Request $request): JsonResponse
+
+    public function __invoke(Request $request): Response
     {
-        $this->validate($request, [
-            'session_id' => 'required|string',
-            'network_code' => 'nullable|string',
-            'phone_number' => 'required|string',
-            'input' => 'nullable',
-            'service_code' => 'required|string',
-            'answer' => 'nullable|string',
-        ]);
+        $request['text'] = $this->lastInput($request->text);
+        $request['phoneNumber'] = preg_replace('/[^0-9]/', '', $request->phoneNumber);
 
-        try {
-            $doc = new \DOMDocument();
+        $ussdMachine = Ussd::machine()
+            ->setFromRequest([
+                'sessionId' => 'sessionId',
+                'phoneNumber' => 'phoneNumber',
+                'network' => 'networkCode',
+                'serviceCode' => 'serviceCode',
+                'input' => 'text',
+            ])
+            ->setInitialState(CheckUserAction::class)
+            ->setResponse(function (string $message, string $action) {
+                return $message;
+            });
 
-            if(Storage::disk('local')->missing('menus/customer.xml')) {
-                throw new \Exception("Missing menu files.");
-            }
+        return response($ussdMachine->run());
+    }
 
-            $doc->load(Storage::disk('local')->path('menus/customer.xml'));
-
-            $xpath = new \DOMXPath($doc);
-
-            $exp = "/menus/menu[@name='customer']/*[1]";
-
-            $prefix = "{$request->phone_number}_{$request->service_code}";
-            
-            $parser = new Parser($xpath, $exp, $this->cache, $prefix, $request->session_id, 120);
-
-            $output = $parser->parse($request->answer);
-        } catch(\Exception $ex) {
-            return response()
-                ->json(['flow' => self::FB, 'data' => $ex->getMessage()])
-                ->header('X-USSD-FLOW',self::FB);
+    protected function lastInput(?string $input) : ?string
+    {
+        if(! $input) {
+            return $input;
         }
 
-        return response()
-            ->json(['flow' => self::FC, 'data' => $output])
-            ->header('X-USSD-FLOW',self::FC);
+        if(! preg_match('/^[\d+\*]+[\d+]$/', $input)) {
+            return $input;
+        }
+
+        $inputs = explode('*', $input);
+
+        return end($inputs);
     }
 }
