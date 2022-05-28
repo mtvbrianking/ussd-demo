@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b65db9b2ac29b86cfb8cd6e18e1ffd2c",
+    "content-hash": "c786247a1219b9f1783938242951d2aa",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -61,75 +61,6 @@
                 "source": "https://github.com/asm89/stack-cors/tree/v2.1.1"
             },
             "time": "2022-01-18T09:12:03+00:00"
-        },
-        {
-            "name": "bmatovu/laravel-ussd",
-            "version": "dev-master",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/mtvbrianking/laravel-ussd.git",
-                "reference": "89ed0c94b6e07a2480b562a4df6461dec05a12c3"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/mtvbrianking/laravel-ussd/zipball/89ed0c94b6e07a2480b562a4df6461dec05a12c3",
-                "reference": "89ed0c94b6e07a2480b562a4df6461dec05a12c3",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/contracts": "^6.0|^7.0|^8.0|^9.0",
-                "illuminate/support": "^6.0|^7.0|^8.0|^9.0",
-                "php": "^7.2.5|^8.0"
-            },
-            "require-dev": {
-                "code-lts/doctum": "^5.5",
-                "friendsofphp/php-cs-fixer": "^3.0",
-                "illuminate/container": "^6.0|^7.0|^8.0|^9.0",
-                "orchestra/testbench": "^4.0|^5.0|^6.0",
-                "phpunit/phpunit": "^8.0|^9.0"
-            },
-            "default-branch": true,
-            "type": "project",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Bmatovu\\Ussd\\UssdServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Bmatovu\\Ussd\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Brian Matovu",
-                    "email": "mtvbrianking@gmail.com",
-                    "homepage": "http://bmatovu.com",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Laravel USSD Builder",
-            "homepage": "https://github.com/mtvbrianking/laravel-ussd",
-            "keywords": [
-                "builder",
-                "laravel",
-                "lumen",
-                "menu",
-                "package",
-                "ussd",
-                "xml"
-            ],
-            "support": {
-                "issues": "https://github.com/mtvbrianking/laravel-ussd/issues",
-                "source": "https://github.com/mtvbrianking/laravel-ussd/tree/master"
-            },
-            "time": "2022-05-28T15:34:18+00:00"
         },
         {
             "name": "brick/math",
