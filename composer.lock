@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b65db9b2ac29b86cfb8cd6e18e1ffd2c",
+    "content-hash": "487b626cfc24000297cb056625ac6e2c",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -2920,68 +2920,6 @@
                 }
             ],
             "time": "2022-03-27T21:42:02+00:00"
-        },
-        {
-            "name": "sparors/laravel-ussd",
-            "version": "v2.4.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/sparors/laravel-ussd.git",
-                "reference": "0f20134e4a1add9c1ae48e8c6dba431219c20a70"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/sparors/laravel-ussd/zipball/0f20134e4a1add9c1ae48e8c6dba431219c20a70",
-                "reference": "0f20134e4a1add9c1ae48e8c6dba431219c20a70",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/support": "~5|~6|~7|~8|~9"
-            },
-            "require-dev": {
-                "mockery/mockery": "^1.1",
-                "orchestra/testbench": "~3|~4|~5|~6|~7",
-                "phpunit/phpunit": "^9.5",
-                "sempro/phpunit-pretty-print": "^1.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Sparors\\Ussd\\UssdServiceProvider"
-                    ],
-                    "aliases": {
-                        "Ussd": "Sparors\\Ussd\\Facades\\Ussd"
-                    }
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Sparors\\Ussd\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Sparors Inc",
-                    "email": "isaacsai030@gmail.com",
-                    "homepage": "https://sparors.github.io"
-                }
-            ],
-            "description": "Create ussd with ease",
-            "homepage": "https://github.com/sparors/laravel-ussd",
-            "keywords": [
-                "laravel",
-                "ussd"
-            ],
-            "support": {
-                "issues": "https://github.com/sparors/laravel-ussd/issues",
-                "source": "https://github.com/sparors/laravel-ussd/tree/v2.4.1"
-            },
-            "time": "2022-03-31T20:15:06+00:00"
         },
         {
             "name": "swiftmailer/swiftmailer",
