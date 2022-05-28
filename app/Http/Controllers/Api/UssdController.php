@@ -45,11 +45,10 @@ class UssdController extends Controller
 
             $xpath = new \DOMXPath($doc);
 
-            $defaultExp = "/menu/*[1]";
+            $options = $request->only(['session_id', 'phone_number', 'service_code']);
+            $options['expression'] = '/menu/*[1]';
 
-            $prefix = "{$request->phone_number}_{$request->service_code}";
-
-            $parser = new Parser($xpath, $defaultExp, $this->cache, $prefix, $request->session_id, 120);
+            $parser = new Parser($xpath, $options, $this->cache, 120);
 
             $output = $parser->parse($request->answer);
         } catch(\Exception $ex) {

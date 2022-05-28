@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <menu>
-    <response text="Coming soon."/>
+    <action name="validate-user"/>
+    <options header="SACCO Services" noback="no">
+        <option text="Savings">
+            <response text="Coming soon."/>
+        </option>
+        <option text="Loans">
+            <response text="Coming soon."/>
+        </option>
+    </options>
 </menu>
