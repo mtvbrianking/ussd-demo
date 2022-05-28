@@ -1,67 +1,36 @@
-Demo USSD App
----
+## Demo USSD App
 
-Tailored to..
-- Africastalking
-- Sparor's USSD package
+Based on [Africastalking](https://africastalking.com)
 
-**Sample HTTP Log**
-
-You may test via Postman or any other CURL client of your choice
+### CURL
 
 ```bash
 curl http://localhost:8000/api \
-  -d 'phoneNumber=+256772100104' \
-  -d 'serviceCode=*384*35711#' \
+  -d 'phoneNumber=+256772100103' \
+  -d 'serviceCode=*214#' \
   -d 'text=' \
   -d 'sessionId=ATUid_6c772a68e52bfc41e8e8d5289db4d90c' \
   -d 'networkCode=99999'
 ```
 
+### Local Simulator
+
 ```bash
-[2022-01-30 15:07:54] local.INFO: HTTP_LOG_ExeHVbBxX6 [REQUEST] POST /api HTTP/1.1  
-[2022-01-30 15:07:54] local.DEBUG: HTTP_LOG_ExeHVbBxX6 [REQUEST] [Headers]
-Accept-Encoding:   gzip
-Content-Length:    130
-Content-Type:      application/x-www-form-urlencoded
-Host:              a0c2-41-210-146-88.ngrok.io
-User-Agent:        at-ussd-api/1.0
-X-Forwarded-For:   164.177.141.82
-X-Forwarded-Proto: https
-  
-[2022-01-30 15:07:54] local.DEBUG: HTTP_LOG_ExeHVbBxX6 [REQUEST] [Body]
-phoneNumber=%2B256772100104&serviceCode=%2A384%2A35711%23&text=&sessionId=ATUid_6c772a68e52bfc41e8e8d5289db4d90c&networkCode=99999
-[2022-01-30 15:07:54] local.INFO: HTTP_LOG_ExeHVbBxX6 [RESPONSE] HTTP/1.1 200 OK 1.00s  
-[2022-01-30 15:07:54] local.DEBUG: HTTP_LOG_ExeHVbBxX6 [RESPONSE] [Headers]
-Cache-Control:         no-cache, private
-Content-Type:          text/html; charset=UTF-8
-Date:                  Sun, 30 Jan 2022 15:07:54 GMT
-X-Ratelimit-Limit:     60
-X-Ratelimit-Remaining: 59
-X-Request-Id:          ExeHVbBxX6
-  
-[2022-01-30 15:07:54] local.DEBUG: HTTP_LOG_ExeHVbBxX6 [RESPONSE] [Body]
-CON DummySACCO
-1.Savings
-2.Loans
-3.Exit
+./africastalking --help
+./africastalking "0772100103"
+./africastalking "0772100103" --dail "*214#"
 ```
 
-```bash
-./phone --help
-./phone 0786352836
-./phone 0786352836 --dail *308#
-./phone 0786352836 --dail *308*1*2#
+### AfricasTalking Simulator
 
-curl -i http://localhost:8000/api \
-  -H 'Accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{"session_id":"10050", "phone_number": "0732123321", "service_code": "305", "answer":""}'
+Create USSD App
 
-curl -i http://localhost:8000/api \
-  -H 'Accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{"session_id":"10050", "phone_number": "0732123321", "service_code": "305", "answer":"1"}'
-````
+https://account.africastalking.com/apps/sandbox
 
-{"message":"The given data was invalid.","errors":{"phone_number":["The phone number field is required."],"service_code":["The service code field is required."]}}
+USSD Service Code: 
+
+https://account.africastalking.com/apps/sandbox/ussd/codes
+
+Test number: 256772100103
+
+https://developers.africastalking.com/simulator
