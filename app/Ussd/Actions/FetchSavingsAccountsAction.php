@@ -30,8 +30,6 @@ class FetchSavingsAccountsAction
             throw new \Exception('You have no saving accounts.');
         }
 
-        // $this->cache->put("{$this->prefix}_saving_accounts", $savingAccounts, $this->ttl);
-
         return $savingAccounts->map(function($account) {
             return [
                 'id' => $account->id,

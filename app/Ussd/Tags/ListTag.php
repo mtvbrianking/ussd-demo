@@ -6,7 +6,6 @@ use App\Ussd\ListItem;
 use Bmatovu\Ussd\Tags\BaseTag;
 use Bmatovu\Ussd\Support\Helper;
 use Illuminate\Container\Container;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ListTag extends BaseTag
@@ -20,8 +19,6 @@ class ListTag extends BaseTag
         $pre = $this->cache->get("{$this->prefix}_pre");
         $exp = $this->cache->get("{$this->prefix}_exp", $this->node->getNodePath());
 
-        // $children = Helper::getDomElements($this->node->childNodes, 'option');
-
         $listAction = $this->node->attributes->getNamedItem('action')->nodeValue;
         $className = Str::studly($listAction);
         $action = $this->createAction("{$className}Action", [$this->cache, $this->prefix, $this->ttl]);
@@ -29,9 +26,6 @@ class ListTag extends BaseTag
 
         $listName = $this->node->attributes->getNamedItem('name')->nodeValue;
         $this->cache->put("{$this->prefix}_{$listName}_list", $listItems, $this->ttl);
-
-        Log::debug("{$this->prefix}_{$listName}_list", $listItems);
-        // 256772100103308_account_list [{"id":3,"label":"50076"},{"id":4,"label":"23049"}]
 
         $pos = 0;
         foreach ($listItems as $item) {
@@ -59,8 +53,6 @@ class ListTag extends BaseTag
         $pre = $this->cache->get("{$this->prefix}_pre");
         $exp = $this->cache->get("{$this->prefix}_exp", $this->node->getNodePath());
 
-        // Log::debug("CheckIn  -->", ['pre' => $pre, 'exp' => $exp]);
-
         if ('0' === $answer) {
             if ($this->node->attributes->getNamedItem('noback')) {
                 throw new \Exception('Invalid choice.');
@@ -68,16 +60,10 @@ class ListTag extends BaseTag
 
             $exp = $this->goBack($pre, 2);
 
-            // Log::debug("GoBack   -->", ['exp' => $exp]);
-
             $this->cache->put("{$this->prefix}_exp", $exp, $this->ttl);
 
             return;
         }
-
-        // if((int) $answer > $this->xpath->query('option', $this->node)->length) {}
-
-        // $children = Helper::getDomElements($this->node->childNodes, 'option');
 
         $listName = $this->node->attributes->getNamedItem('name')->nodeValue;
         $listItems = $this->cache->pull("{$this->prefix}_{$listName}_list", []);
