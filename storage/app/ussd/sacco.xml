@@ -3,6 +3,7 @@
     <action name="check-user"/>
     <options header="SACCO Services" noback="no">
         <option text="Savings">
+            <list header="Savings Accounts" name="account" action="fetch-savings-accounts"/>
             <response text="Coming soon."/>
         </option>
         <option text="Loans">

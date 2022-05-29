@@ -32,6 +32,6 @@ class CheckUserAction
             throw new \Exception("{$phoneNumber} is not activated for this service.");
         }
 
-        $this->cache->put('user_id', $user->id, $this->ttl);
+        $this->cache->put("{$this->prefix}_user_id", $user->id, $this->ttl);
     }
 }
