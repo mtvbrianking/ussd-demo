@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <menu>
-    <action name="validate-user"/>
+    <action name="check-user"/>
     <options header="SACCO Services" noback="no">
         <option text="Savings">
             <response text="Coming soon."/>

@@ -17,8 +17,8 @@ curl http://localhost:8000/api \
 
 ```bash
 ./africastalking --help
-./africastalking "0772100103"
-./africastalking "0772100103" --dail "*214#"
+./africastalking "256772100103"
+./africastalking "256772100103" --dail "*214#"
 ```
 
 ### AfricasTalking Simulator
