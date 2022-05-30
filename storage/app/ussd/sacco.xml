@@ -3,8 +3,21 @@
     <action name="check-user"/>
     <options header="SACCO Services" noback="no">
         <option text="Savings">
-            <list header="Savings Accounts" name="account" action="fetch-savings-accounts"/>
-            <response text="Coming soon."/>
+            <list header="Saving Accounts" name="account" action="fetch-savings-accounts"/>
+            <options header="Savings">
+                <option text="Deposit">
+                    <response text="Coming soon."/>
+                </option>
+                <option text="Withdraw">
+                    <response text="Coming soon."/>
+                </option>
+                <option text="Check Balance">
+                    <action name="check-balance"/>
+                </option>
+                <option text="Check Transaction">
+                    <response text="Coming soon."/>
+                </option>
+            </options>
         </option>
         <option text="Loans">
             <response text="Coming soon."/>
