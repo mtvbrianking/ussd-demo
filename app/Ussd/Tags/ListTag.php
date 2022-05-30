@@ -21,8 +21,8 @@ class ListTag extends BaseTag
 
         $listAction = $this->node->attributes->getNamedItem('action')->nodeValue;
         $className = Str::studly($listAction);
-        $action = $this->createAction("{$className}Action", [$this->cache, $this->prefix, $this->ttl]);
-        $listItems = $action($this->node);
+        $action = $this->createAction("{$className}Action", [$this->node, $this->cache, $this->prefix, $this->ttl]);
+        $listItems = json_decode($action->handle(), true);
 
         $listName = $this->node->attributes->getNamedItem('name')->nodeValue;
         $this->cache->put("{$this->prefix}_{$listName}_list", $listItems, $this->ttl);
@@ -110,7 +110,7 @@ class ListTag extends BaseTag
         throw new \Exception("Missing class: {$actionName}");
     }
 
-    protected function createAction(string $actionName, array $args = []): callable
+    protected function createAction(string $actionName, array $args = []): object
     {
         $fqcn = $this->resolveActionClass($actionName);
 

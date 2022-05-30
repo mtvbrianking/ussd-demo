@@ -7,18 +7,25 @@ use Illuminate\Contracts\Cache\Repository as CacheContract;
 
 class CheckUserAction
 {
+    protected \DOMNode $node;
     protected CacheContract $cache;
     protected string $prefix;
     protected int $ttl;
 
-    public function __construct(CacheContract $cache, string $prefix, ?int $ttl = null)
+    public function __construct(\DOMNode $node, CacheContract $cache, string $prefix, ?int $ttl = null)
     {
+        $this->node = $node;
         $this->cache = $cache;
         $this->prefix = $prefix;
         $this->ttl = $ttl;
     }
 
-    public function __invoke(\DOMNode $node): void
+    public function handle(): ?string
+    {
+        return '';
+    }
+
+    public function process(?string $answer): void
     {
         $phoneNumber = $this->cache->get("{$this->prefix}_phone_number");
 

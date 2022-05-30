@@ -7,18 +7,20 @@ use Illuminate\Contracts\Cache\Repository as CacheContract;
 
 class FetchSavingsAccountsAction
 {
+    protected \DOMNode $node;
     protected CacheContract $cache;
     protected string $prefix;
     protected int $ttl;
 
-    public function __construct(CacheContract $cache, string $prefix, ?int $ttl = null)
+    public function __construct(\DOMNode $node, CacheContract $cache, string $prefix, ?int $ttl = null)
     {
+        $this->node = $node;
         $this->cache = $cache;
         $this->prefix = $prefix;
         $this->ttl = $ttl;
     }
 
-    public function __invoke(\DOMNode $node): array
+    public function handle(): ?string
     {
         $user_id = $this->cache->get("{$this->prefix}_user_id");
 
@@ -35,7 +37,7 @@ class FetchSavingsAccountsAction
                 'id' => $account->id,
                 'label' => $account->number,
             ];
-        })->toArray();
+        })->toJson();
 
         // $items = [
         //     ['id' => 1, 'label' => 'jdoe'],
@@ -46,5 +48,9 @@ class FetchSavingsAccountsAction
         // // $list = new ListItems(['items' => $items]);
 
         return $accounts;
+    }
+
+    public function process(?string $answer): void
+    {
     }
 }
