@@ -3,7 +3,9 @@
 namespace App\Ussd\Actions;
 
 use App\Models\Account;
+use App\Models\User;
 use Illuminate\Contracts\Cache\Repository as CacheContract;
+use Illuminate\Support\Facades\Hash;
 
 class CheckBalanceAction
 {
@@ -22,11 +24,15 @@ class CheckBalanceAction
 
     public function handle(): ?string
     {
-        return '';
+        // return $this->node->attributes->getNamedItem('text')->nodeValue;
+
+        return 'Enter PIN: ';
     }
 
     public function process(?string $answer): void
     {
+        $this->authorize($answer);
+
         $accountId = $this->cache->get("{$this->prefix}_account_id");
 
         $accountLabel = $this->cache->get("{$this->prefix}_account_label");
@@ -38,5 +44,20 @@ class CheckBalanceAction
         }
 
         throw new \Exception("Account No: {$account->number}. Bal: {$account->formattedBalance}");
+    }
+
+    protected function authorize(?string $answer): void
+    {
+        if ('' == $answer) {
+            throw new \Exception('PIN is required.');
+        }
+
+        $user_id = $this->cache->get("{$this->prefix}_user_id");
+
+        $user = User::findOrFail($user_id);
+
+        if(! Hash::check($answer, $user->pin_code)) {
+            throw new \Exception('Wrong PIN.');
+        }
     }
 }
