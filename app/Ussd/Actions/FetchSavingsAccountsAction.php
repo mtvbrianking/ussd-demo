@@ -30,11 +30,21 @@ class FetchSavingsAccountsAction
             throw new \Exception('You have no saving accounts.');
         }
 
-        return $savingAccounts->map(function($account) {
+        $accounts = $savingAccounts->map(function($account) {
             return [
                 'id' => $account->id,
                 'label' => $account->number,
             ];
         })->toArray();
+
+        // $items = [
+        //     ['id' => 1, 'label' => 'jdoe'],
+        //     ['id' => '2', 'label' => 'bmatovu'],
+        // ];
+
+        // $list = new ListItems(items: $items);
+        // // $list = new ListItems(['items' => $items]);
+
+        return $accounts;
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Ussd\Tags;
 
-use App\Ussd\ListItem;
+use App\Ussd\Dto\Item;
 use Bmatovu\Ussd\Tags\BaseTag;
 use Bmatovu\Ussd\Support\Helper;
 use Illuminate\Container\Container;
@@ -28,10 +28,10 @@ class ListTag extends BaseTag
         $this->cache->put("{$this->prefix}_{$listName}_list", $listItems, $this->ttl);
 
         $pos = 0;
-        foreach ($listItems as $item) {
+        foreach ($listItems as $listItem) {
             ++$pos;
-            $listItem = new ListItem($item);
-            $body .= "\n{$pos}) ".$listItem->label;
+            $item = new Item($listItem);
+            $body .= "\n{$pos}) ".$item->label;
         }
 
         if (! $this->node->attributes->getNamedItem('noback')) {
@@ -74,10 +74,10 @@ class ListTag extends BaseTag
 
         --$answer;
 
-        $listItem = new ListItem($listItems[$answer]);
+        $item = new Item($listItems[$answer]);
 
-        $this->cache->put("{$this->prefix}_{$listName}_id", $listItem->id, $this->ttl);
-        $this->cache->put("{$this->prefix}_{$listName}_label", $listItem->label, $this->ttl);
+        $this->cache->put("{$this->prefix}_{$listName}_id", $item->id, $this->ttl);
+        $this->cache->put("{$this->prefix}_{$listName}_label", $item->label, $this->ttl);
 
     }
 
