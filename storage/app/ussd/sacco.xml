@@ -15,7 +15,8 @@
                     <action name="check-balance"/>
                 </option>
                 <option text="Check Transaction">
-                    <response text="Coming soon."/>
+                    <question name="transaction_id" text="Enter Transaction ID: "/>
+                    <action name="check-transaction"/>
                 </option>
             </options>
         </option>

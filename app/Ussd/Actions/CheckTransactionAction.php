@@ -7,7 +7,7 @@ use App\Models\User;
 use Illuminate\Contracts\Cache\Repository as CacheContract;
 use Illuminate\Support\Facades\Hash;
 
-class CheckBalanceAction
+class CheckTransactionAction
 {
     protected \DOMNode $node;
     protected CacheContract $cache;
@@ -35,11 +35,20 @@ class CheckBalanceAction
 
         $accountId = $this->cache->get("{$this->prefix}_account_id");
 
-        $accountLabel = $this->cache->get("{$this->prefix}_account_label");
-
         $account = Account::findOrFail($accountId);
 
-        throw new \Exception("Account No: {$account->number}. Bal: {$account->formattedBalance}");
+        $transactionId = $this->cache->get("{$this->prefix}_transaction_id");
+
+        $transaction = $account->transactions()->findOrFail($transactionId);
+
+        $stmt = [
+            '#' . $transaction->id,
+            ucfirst($transaction->type),
+            $transaction->formattedAmount,
+            $transaction->created_at->format('d-m-Y H:i'),
+        ];
+
+        throw new \Exception(implode(" . ", $stmt));
     }
 
     protected function authorize(?string $answer): void
