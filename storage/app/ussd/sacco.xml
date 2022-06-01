@@ -27,8 +27,7 @@
                         </option>
                     </options>
                     <question name="amount" text="Enter Amount: "/>
-                    <!-- <action name="withdraw"/> -->
-                    <response text="Withdraw coming soon."/>
+                    <action name="withdraw"/>
                 </option>
                 <option text="Check Balance">
                     <action name="check-balance"/>

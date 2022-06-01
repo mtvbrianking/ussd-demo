@@ -68,12 +68,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/mtvbrianking/laravel-ussd.git",
-                "reference": "e1cbde58f860f6dde125576b583afc685c0a2d4a"
+                "reference": "b292fd6fa994a3f7bc1303da14eb00e9bcbcb8c2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mtvbrianking/laravel-ussd/zipball/e1cbde58f860f6dde125576b583afc685c0a2d4a",
-                "reference": "e1cbde58f860f6dde125576b583afc685c0a2d4a",
+                "url": "https://api.github.com/repos/mtvbrianking/laravel-ussd/zipball/b292fd6fa994a3f7bc1303da14eb00e9bcbcb8c2",
+                "reference": "b292fd6fa994a3f7bc1303da14eb00e9bcbcb8c2",
                 "shasum": ""
             },
             "require": {
@@ -129,7 +129,7 @@
                 "issues": "https://github.com/mtvbrianking/laravel-ussd/issues",
                 "source": "https://github.com/mtvbrianking/laravel-ussd/tree/master"
             },
-            "time": "2022-06-01T13:52:02+00:00"
+            "time": "2022-06-01T15:00:55+00:00"
         },
         {
             "name": "brick/math",
