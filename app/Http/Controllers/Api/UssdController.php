@@ -20,7 +20,7 @@ class UssdController extends Controller
     public function __construct(CacheContract $cache)
     {
         $this->cache = $cache;
-        $this->middleware('log:api');
+        // $this->middleware('log:api');
     }
 
     public function __invoke(Request $request): JsonResponse

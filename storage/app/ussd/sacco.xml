@@ -6,10 +6,29 @@
             <list header="Saving Accounts" name="account" action="fetch-savings-accounts"/>
             <options header="Savings">
                 <option text="Deposit">
-                    <response text="Coming soon."/>
+                    <options header="Deposit From:">
+                        <option text="My Number">
+                            <variable name="sender" value="{{phone_number}}"/>
+                        </option>
+                        <option text="Another Number">
+                            <question name="sender" text="Enter Phone Number: "/>
+                        </option>
+                    </options>
+                    <question name="amount" text="Enter Amount: "/>
+                    <action name="deposit"/>
                 </option>
                 <option text="Withdraw">
-                    <response text="Coming soon."/>
+                    <options header="Withdraw To:">
+                        <option text="My Number">
+                            <variable name="receiver" value="{{phone_number}}"/>
+                        </option>
+                        <option text="Another Number">
+                            <question name="receiver" text="Enter Phone Number: "/>
+                        </option>
+                    </options>
+                    <question name="amount" text="Enter Amount: "/>
+                    <!-- <action name="withdraw"/> -->
+                    <response text="Withdraw coming soon."/>
                 </option>
                 <option text="Check Balance">
                     <action name="check-balance"/>
