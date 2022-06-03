@@ -20,7 +20,7 @@ class UssdController extends Controller
     public function __construct(CacheContract $cache)
     {
         $this->cache = $cache;
-        // $this->middleware('log:api');
+        $this->middleware('log:api');
     }
 
     public function __invoke(Request $request): JsonResponse
@@ -68,9 +68,8 @@ class UssdController extends Controller
             'sessionId' => 'required|string',
             'networkCode' => 'nullable|string',
             'phoneNumber' => 'required|string',
-            'input' => 'nullable',
             'serviceCode' => 'required|string',
-            'answer' => 'nullable|string',
+            'text' => 'nullable|string',
         ]);
 
         try {
@@ -84,17 +83,37 @@ class UssdController extends Controller
 
             $xpath = new \DOMXPath($doc);
 
-            $defaultExp = "/menu/*[1]";
+            $options = [
+                'session_id' => $request->sessionId,
+                'phone_number' => preg_replace('/[^0-9]/', '', $request->phoneNumber),
+                'service_code' => $request->serviceCode,
+                'expression' => '/menu/*[1]',
+            ];
 
-            $prefix = "{$request->phoneNumber}_{$request->serviceCode}";
+            $parser = new Parser($xpath, $options, $this->cache, 120);
 
-            $parser = new Parser($xpath, $defaultExp, $this->cache, $prefix, $request->sessionId, 120);
+            $answer = $this->lastInput($request->text);
 
-            $output = $parser->parse($request->answer);
+            $output = $parser->parse($answer);
         } catch(\Exception $ex) {
             return response("END " . $ex->getMessage());
         }
 
         return response("CON {$output}");
+    }
+
+    protected function lastInput(?string $input) : ?string
+    {
+        if(! $input) {
+            return $input;
+        }
+
+        if(! preg_match('/^[\d+\*]+[\d+]$/', $input)) {
+            return $input;
+        }
+
+        $inputs = explode('*', $input);
+
+        return end($inputs);
     }
 }

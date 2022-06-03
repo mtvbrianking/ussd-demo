@@ -4,27 +4,15 @@ namespace App\Ussd\Actions;
 
 use App\Models\Account;
 use App\Models\User;
+use Bmatovu\Ussd\Actions\BaseAction;
 use Illuminate\Contracts\Cache\Repository as CacheContract;
 use Illuminate\Support\Facades\Hash;
 
-class WithdrawAction
+class WithdrawAction extends BaseAction
 {
-    protected \DOMNode $node;
-    protected CacheContract $cache;
-    protected string $prefix;
-    protected int $ttl;
-
-    public function __construct(\DOMNode $node, CacheContract $cache, string $prefix, ?int $ttl = null)
-    {
-        $this->node = $node;
-        $this->cache = $cache;
-        $this->prefix = $prefix;
-        $this->ttl = $ttl;
-    }
-
     public function handle(): ?string
     {
-        // return $this->node->attributes->getNamedItem('text')->nodeValue;
+        $this->shiftCursor();
 
         return 'Enter PIN: ';
     }
@@ -36,9 +24,9 @@ class WithdrawAction
         // Trigger debit towards the depositor's phone...
         // Send user an SMS when the TelCo confirms transfer
 
-        $receiver = $this->cache->get("{$this->prefix}_receiver");
+        $receiver = $this->fromCache("receiver");
 
-        $amount = $this->cache->get("{$this->prefix}_amount");
+        $amount = $this->fromCache("amount");
 
         throw new \Exception("Initiated withdraw of {$amount} to {$receiver}.");
     }
@@ -49,7 +37,7 @@ class WithdrawAction
             throw new \Exception('PIN is required.');
         }
 
-        $user_id = $this->cache->get("{$this->prefix}_user_id");
+        $user_id = $this->fromCache("user_id");
 
         $user = User::findOrFail($user_id);
 

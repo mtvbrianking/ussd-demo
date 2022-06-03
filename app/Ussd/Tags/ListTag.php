@@ -12,20 +12,20 @@ class ListTag extends BaseTag
 {
     public function handle(): ?string
     {
-        $header = $this->node->attributes->getNamedItem('header')->nodeValue;
+        $header = $this->readAttr('header');
 
         $body = '';
 
-        $pre = $this->cache->get("{$this->prefix}_pre");
-        $exp = $this->cache->get("{$this->prefix}_exp", $this->node->getNodePath());
+        $pre = $this->fromCache("pre");
+        $exp = $this->fromCache("exp", $this->node->getNodePath());
 
-        $listAction = $this->node->attributes->getNamedItem('action')->nodeValue;
+        $listAction = $this->readAttr('action');
         $className = Str::studly($listAction);
         $action = $this->createAction("{$className}Action", [$this->node, $this->cache, $this->prefix, $this->ttl]);
         $listItems = json_decode($action->handle(), true);
 
-        $listName = $this->node->attributes->getNamedItem('name')->nodeValue;
-        $this->cache->put("{$this->prefix}_{$listName}_list", $listItems, $this->ttl);
+        $listName = $this->readAttr('name');
+        $this->toCache("{$listName}_list", $listItems);
 
         $pos = 0;
         foreach ($listItems as $listItem) {
@@ -34,12 +34,12 @@ class ListTag extends BaseTag
             $body .= "\n{$pos}) ".$item->label;
         }
 
-        if (! $this->node->attributes->getNamedItem('noback')) {
+        if (! $this->readAttr('noback')) {
             $body .= "\n0) Back";
         }
 
-        $this->cache->put("{$this->prefix}_pre", $exp, $this->ttl);
-        $this->cache->put("{$this->prefix}_exp", $this->incExp($exp), $this->ttl);
+        $this->toCache("pre", $exp);
+        $this->toCache("exp", $this->incExp($exp));
 
         return "{$header}{$body}";
     }
@@ -50,22 +50,22 @@ class ListTag extends BaseTag
             throw new \Exception('Make a choice.');
         }
 
-        $pre = $this->cache->get("{$this->prefix}_pre");
-        $exp = $this->cache->get("{$this->prefix}_exp", $this->node->getNodePath());
+        $pre = $this->fromCache("pre");
+        $exp = $this->fromCache("exp", $this->node->getNodePath());
 
         if ('0' === $answer) {
-            if ($this->node->attributes->getNamedItem('noback')) {
+            if ($this->readAttr('noback')) {
                 throw new \Exception('Invalid choice.');
             }
 
             $exp = $this->goBack($pre, 2);
 
-            $this->cache->put("{$this->prefix}_exp", $exp, $this->ttl);
+            $this->toCache("exp", $exp);
 
             return;
         }
 
-        $listName = $this->node->attributes->getNamedItem('name')->nodeValue;
+        $listName = $this->readAttr('name');
         $listItems = $this->cache->pull("{$this->prefix}_{$listName}_list", []);
 
         if ((int) $answer > \count($listItems)) {
@@ -76,8 +76,8 @@ class ListTag extends BaseTag
 
         $item = new Item($listItems[$answer]);
 
-        $this->cache->put("{$this->prefix}_{$listName}_id", $item->id, $this->ttl);
-        $this->cache->put("{$this->prefix}_{$listName}_label", $item->label, $this->ttl);
+        $this->toCache("{$listName}_id", $item->id);
+        $this->toCache("{$listName}_label", $item->label);
 
     }
 

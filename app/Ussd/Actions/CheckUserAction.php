@@ -3,31 +3,21 @@
 namespace App\Ussd\Actions;
 
 use App\Models\User;
+use Bmatovu\Ussd\Actions\BaseAction;
 use Illuminate\Contracts\Cache\Repository as CacheContract;
 
-class CheckUserAction
+class CheckUserAction extends BaseAction
 {
-    protected \DOMNode $node;
-    protected CacheContract $cache;
-    protected string $prefix;
-    protected int $ttl;
-
-    public function __construct(\DOMNode $node, CacheContract $cache, string $prefix, ?int $ttl = null)
-    {
-        $this->node = $node;
-        $this->cache = $cache;
-        $this->prefix = $prefix;
-        $this->ttl = $ttl;
-    }
-
     public function handle(): ?string
     {
+        $this->shiftCursor();
+
         return '';
     }
 
     public function process(?string $answer): void
     {
-        $phoneNumber = $this->cache->get("{$this->prefix}_phone_number");
+        $phoneNumber = $this->fromCache("phone_number");
 
         $user = User::where('phone_number', $phoneNumber)->first();
 
@@ -39,6 +29,6 @@ class CheckUserAction
             throw new \Exception("{$phoneNumber} is not activated for this service.");
         }
 
-        $this->cache->put("{$this->prefix}_user_id", $user->id, $this->ttl);
+        $this->toCache("user_id", $user->id);
     }
 }

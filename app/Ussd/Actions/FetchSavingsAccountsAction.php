@@ -3,26 +3,16 @@
 namespace App\Ussd\Actions;
 
 use App\Models\User;
+use Bmatovu\Ussd\Actions\BaseAction;
 use Illuminate\Contracts\Cache\Repository as CacheContract;
 
-class FetchSavingsAccountsAction
+class FetchSavingsAccountsAction extends BaseAction
 {
-    protected \DOMNode $node;
-    protected CacheContract $cache;
-    protected string $prefix;
-    protected int $ttl;
-
-    public function __construct(\DOMNode $node, CacheContract $cache, string $prefix, ?int $ttl = null)
-    {
-        $this->node = $node;
-        $this->cache = $cache;
-        $this->prefix = $prefix;
-        $this->ttl = $ttl;
-    }
-
     public function handle(): ?string
     {
-        $user_id = $this->cache->get("{$this->prefix}_user_id");
+        $this->shiftCursor();
+
+        $user_id = $this->fromCache("user_id");
 
         $user = User::findOrFail($user_id);
 

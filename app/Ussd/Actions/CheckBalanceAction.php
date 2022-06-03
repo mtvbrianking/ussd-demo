@@ -4,27 +4,15 @@ namespace App\Ussd\Actions;
 
 use App\Models\Account;
 use App\Models\User;
+use Bmatovu\Ussd\Actions\BaseAction;
 use Illuminate\Contracts\Cache\Repository as CacheContract;
 use Illuminate\Support\Facades\Hash;
 
-class CheckBalanceAction
+class CheckBalanceAction extends BaseAction
 {
-    protected \DOMNode $node;
-    protected CacheContract $cache;
-    protected string $prefix;
-    protected int $ttl;
-
-    public function __construct(\DOMNode $node, CacheContract $cache, string $prefix, ?int $ttl = null)
-    {
-        $this->node = $node;
-        $this->cache = $cache;
-        $this->prefix = $prefix;
-        $this->ttl = $ttl;
-    }
-
     public function handle(): ?string
     {
-        // return $this->node->attributes->getNamedItem('text')->nodeValue;
+        $this->shiftCursor();
 
         return 'Enter PIN: ';
     }
@@ -33,9 +21,9 @@ class CheckBalanceAction
     {
         $this->authorize($answer);
 
-        $accountId = $this->cache->get("{$this->prefix}_account_id");
+        $accountId = $this->fromCache("account_id");
 
-        $accountLabel = $this->cache->get("{$this->prefix}_account_label");
+        $accountLabel = $this->fromCache("account_label");
 
         $account = Account::findOrFail($accountId);
 
@@ -48,7 +36,7 @@ class CheckBalanceAction
             throw new \Exception('PIN is required.');
         }
 
-        $user_id = $this->cache->get("{$this->prefix}_user_id");
+        $user_id = $this->fromCache("user_id");
 
         $user = User::findOrFail($user_id);
 
