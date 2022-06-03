@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class UssdController extends Controller
 {
@@ -64,13 +65,18 @@ class UssdController extends Controller
 
     public function africastalking(Request $request): Response
     {
-        $this->validate($request, [
+        $validator = Validator::make($request->all(), [
             'sessionId' => 'required|string',
             'networkCode' => 'nullable|string',
             'phoneNumber' => 'required|string',
             'serviceCode' => 'required|string',
             'text' => 'nullable|string',
         ]);
+
+        if ($validator->fails()) {
+            // $errors = json_encode($validator->errors());
+            return response("END The given data was invalid.", 422);
+        }
 
         try {
             $doc = new \DOMDocument();
