@@ -4,6 +4,7 @@ namespace App\Ussd\Actions;
 
 use App\Models\User;
 use Bmatovu\Ussd\Actions\BaseAction;
+use Bmatovu\Ussd\Contracts\AnswerableTag;
 use Illuminate\Contracts\Cache\Repository as CacheContract;
 
 class FetchSavingsAccountsAction extends BaseAction
@@ -38,9 +39,5 @@ class FetchSavingsAccountsAction extends BaseAction
         // // $list = new ListItems(['items' => $items]);
 
         return $accounts;
-    }
-
-    public function process(?string $answer): void
-    {
     }
 }

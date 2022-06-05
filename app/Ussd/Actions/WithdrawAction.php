@@ -5,10 +5,11 @@ namespace App\Ussd\Actions;
 use App\Models\Account;
 use App\Models\User;
 use Bmatovu\Ussd\Actions\BaseAction;
+use Bmatovu\Ussd\Contracts\AnswerableTag;
 use Illuminate\Contracts\Cache\Repository as CacheContract;
 use Illuminate\Support\Facades\Hash;
 
-class WithdrawAction extends BaseAction
+class WithdrawAction extends BaseAction implements AnswerableTag
 {
     public function handle(): ?string
     {

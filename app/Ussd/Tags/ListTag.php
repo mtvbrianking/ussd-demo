@@ -3,12 +3,13 @@
 namespace App\Ussd\Tags;
 
 use App\Ussd\Dto\Item;
+use Bmatovu\Ussd\Contracts\AnswerableTag;
 use Bmatovu\Ussd\Tags\BaseTag;
 use Bmatovu\Ussd\Support\Helper;
 use Illuminate\Container\Container;
 use Illuminate\Support\Str;
 
-class ListTag extends BaseTag
+class ListTag extends BaseTag implements AnswerableTag
 {
     public function handle(): ?string
     {

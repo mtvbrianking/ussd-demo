@@ -313,4 +313,29 @@ class UssdController extends Controller
 
         return end($inputs);
     }
+
+    protected function clean(string $code = ''): string
+    {
+        if(! $code) {
+            return $code;
+        }
+
+        return rtrim(ltrim($code, '*'), '#');
+    }
+
+    protected function getAnswer(string $userInput = '', string $serviceCode = ''): string
+    {
+        if(! $userInput) {
+            return '';
+        }
+
+        if(! $serviceCode) {
+            return clean($userInput);
+        }
+
+        $userInput = clean($userInput);
+        $serviceCode = clean($serviceCode);
+
+        return clean(str_replace($serviceCode, '', $userInput));
+    }
 }
