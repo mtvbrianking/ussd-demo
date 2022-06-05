@@ -35,7 +35,7 @@ curl http://localhost:8000/api/ussd \
 **CURL**
 
 ```bash
-curl http://localhost:8000/api/ussd/at \
+curl http://localhost:8000/api/ussd/africastalking \
   -d 'phoneNumber=+256772100103' \
   -d 'serviceCode=*384*35711#' \
   -d 'text=' \
