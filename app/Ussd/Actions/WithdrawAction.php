@@ -2,11 +2,9 @@
 
 namespace App\Ussd\Actions;
 
-use App\Models\Account;
 use App\Models\User;
 use Bmatovu\Ussd\Actions\BaseAction;
 use Bmatovu\Ussd\Contracts\AnswerableTag;
-use Illuminate\Contracts\Cache\Repository as CacheContract;
 use Illuminate\Support\Facades\Hash;
 
 class WithdrawAction extends BaseAction implements AnswerableTag
@@ -25,9 +23,9 @@ class WithdrawAction extends BaseAction implements AnswerableTag
         // Trigger debit towards the depositor's phone...
         // Send user an SMS when the TelCo confirms transfer
 
-        $receiver = $this->fromCache("receiver");
+        $receiver = $this->store->get('receiver');
 
-        $amount = $this->fromCache("amount");
+        $amount = $this->store->get('amount');
 
         throw new \Exception("Initiated withdraw of {$amount} to {$receiver}.");
     }
@@ -38,7 +36,7 @@ class WithdrawAction extends BaseAction implements AnswerableTag
             throw new \Exception('PIN is required.');
         }
 
-        $user_id = $this->fromCache("user_id");
+        $user_id = $this->store->get('user_id');
 
         $user = User::findOrFail($user_id);
 

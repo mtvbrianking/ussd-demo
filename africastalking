@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--service', help="USSD shortcode", type=str, default="*308#", metavar='')
     parser.add_argument('--network', help="Network code", type=str, default="6001", metavar='')
     parser.add_argument('--session', help="Session ID *Auto Generated", type=str, default="", metavar='')
-    parser.add_argument('--api', help="API URI", type=str, default="http://localhost:8000/api/ussd/at", metavar='')
+    parser.add_argument('--api', help="API URI", type=str, default="http://localhost:8000/api/ussd/africastalking", metavar='')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s v1.0 by bmatovu', help="Show program's info")
     parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS, help='Show usage')
 

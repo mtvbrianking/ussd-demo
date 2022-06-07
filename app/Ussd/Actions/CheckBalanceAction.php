@@ -22,9 +22,9 @@ class CheckBalanceAction extends BaseAction implements AnswerableTag
     {
         $this->authorize($answer);
 
-        $accountId = $this->fromCache("account_id");
+        $accountId = $this->store->get('account_id');
 
-        $accountLabel = $this->fromCache("account_label");
+        $accountLabel = $this->store->get('account_label');
 
         $account = Account::findOrFail($accountId);
 
@@ -37,7 +37,7 @@ class CheckBalanceAction extends BaseAction implements AnswerableTag
             throw new \Exception('PIN is required.');
         }
 
-        $user_id = $this->fromCache("user_id");
+        $user_id = $this->store->get('user_id');
 
         $user = User::findOrFail($user_id);
 

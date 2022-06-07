@@ -22,7 +22,7 @@ class UssdController extends Controller
     public function __construct(CacheContract $cache)
     {
         $this->cache = $cache;
-        $this->middleware('log:api');
+        // $this->middleware('log:api');
     }
 
     public function __invoke(Request $request): JsonResponse
@@ -57,14 +57,13 @@ class UssdController extends Controller
 
             $xpath = new \DOMXPath($doc);
 
-            $options = $request->only(['session_id', 'phone_number', 'service_code']);
-            $options['expression'] = '/menu/*[1]';
+            $parser = (new Parser($xpath, '/menu/*[1]', $request->session_id, $request->service_code))
+                ->setOptions([
+                    'phone_number' => $request->phone_number,
+                ]);
 
-            $parser = new Parser($xpath, $options, $this->cache, 120);
-
-            // $answers = split('*', $request->answer);
-
-            $output = $parser->parse($request->answer);
+            // $output = $parser->parse($request->answer);
+            $output = $parser->parse($request->input);
         } catch(\Exception $ex) {
             return response()
                 ->json(['flow' => self::FB, 'data' => $ex->getMessage()])
@@ -95,7 +94,7 @@ class UssdController extends Controller
         try {
             $doc = new \DOMDocument();
 
-            if(Storage::disk('local')->missing('ussd/saccos.xml')) {
+            if(Storage::disk('local')->missing('ussd/sacco.xml')) {
                 return response('END Missing menu file.');
             }
 
@@ -103,18 +102,15 @@ class UssdController extends Controller
 
             $xpath = new \DOMXPath($doc);
 
-            $options = [
-                'session_id' => $request->sessionId,
-                'phone_number' => preg_replace('/[^0-9]/', '', $request->phoneNumber),
-                'service_code' => $request->serviceCode,
-                'expression' => '/menu/*[1]',
-            ];
+            $parser = (new Parser($xpath, '/menu/*[1]', $request->sessionId, $request->serviceCode))
+                ->setOptions([
+                    'phone_number' => $request->phoneNumber,
+                ]);
 
-            $parser = new Parser($xpath, $options, $this->cache, 120);
+            $output = $parser->parse($request->text);
 
-            $answer = $this->lastInput($request->text);
-
-            $output = $parser->parse($answer);
+            // $answer = $this->lastInput($request->text);
+            // $output = $parser->parse($answer);
         } catch(\Exception $ex) {
             return response("END " . $ex->getMessage());
         }

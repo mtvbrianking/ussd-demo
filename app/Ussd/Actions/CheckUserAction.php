@@ -5,7 +5,6 @@ namespace App\Ussd\Actions;
 use App\Models\User;
 use Bmatovu\Ussd\Actions\BaseAction;
 use Bmatovu\Ussd\Contracts\AnswerableTag;
-use Illuminate\Contracts\Cache\Repository as CacheContract;
 
 class CheckUserAction extends BaseAction implements AnswerableTag
 {
@@ -18,7 +17,7 @@ class CheckUserAction extends BaseAction implements AnswerableTag
 
     public function process(?string $answer): void
     {
-        $phoneNumber = $this->fromCache("phone_number");
+        $phoneNumber = $this->store->get('phone_number');
 
         $user = User::where('phone_number', $phoneNumber)->first();
 
@@ -30,6 +29,6 @@ class CheckUserAction extends BaseAction implements AnswerableTag
             throw new \Exception("{$phoneNumber} is not activated for this service.");
         }
 
-        $this->toCache("user_id", $user->id);
+        $this->store->put('user_id', $user->id);
     }
 }

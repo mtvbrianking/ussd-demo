@@ -6,7 +6,6 @@ use App\Models\Account;
 use App\Models\User;
 use Bmatovu\Ussd\Actions\BaseAction;
 use Bmatovu\Ussd\Contracts\AnswerableTag;
-use Illuminate\Contracts\Cache\Repository as CacheContract;
 use Illuminate\Support\Facades\Hash;
 
 class CheckTransactionAction extends BaseAction implements AnswerableTag
@@ -22,11 +21,11 @@ class CheckTransactionAction extends BaseAction implements AnswerableTag
     {
         $this->authorize($answer);
 
-        $accountId = $this->fromCache("account_id");
+        $accountId = $this->store->get('account_id');
 
         $account = Account::findOrFail($accountId);
 
-        $transactionId = $this->fromCache("transaction_id");
+        $transactionId = $this->store->get('transaction_id');
 
         $transaction = $account->transactions()->findOrFail($transactionId);
 
@@ -37,7 +36,7 @@ class CheckTransactionAction extends BaseAction implements AnswerableTag
             $transaction->created_at->format('d-m-Y H:i'),
         ];
 
-        throw new \Exception(implode(" . ", $stmt));
+        throw new \Exception(implode(' . ', $stmt));
     }
 
     protected function authorize(?string $answer): void
@@ -46,7 +45,7 @@ class CheckTransactionAction extends BaseAction implements AnswerableTag
             throw new \Exception('PIN is required.');
         }
 
-        $user_id = $this->fromCache("user_id");
+        $user_id = $this->store->get('user_id');
 
         $user = User::findOrFail($user_id);
 

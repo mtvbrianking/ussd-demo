@@ -4,8 +4,6 @@ namespace App\Ussd\Actions;
 
 use App\Models\User;
 use Bmatovu\Ussd\Actions\BaseAction;
-use Bmatovu\Ussd\Contracts\AnswerableTag;
-use Illuminate\Contracts\Cache\Repository as CacheContract;
 
 class FetchSavingsAccountsAction extends BaseAction
 {
@@ -13,7 +11,7 @@ class FetchSavingsAccountsAction extends BaseAction
     {
         $this->shiftCursor();
 
-        $user_id = $this->fromCache("user_id");
+        $user_id = $this->store->get('user_id');
 
         $user = User::findOrFail($user_id);
 

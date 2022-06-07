@@ -17,16 +17,16 @@ class ListTag extends BaseTag implements AnswerableTag
 
         $body = '';
 
-        $pre = $this->fromCache("pre");
-        $exp = $this->fromCache("exp", $this->node->getNodePath());
+        $pre = $this->store->get('_pre');
+        $exp = $this->store->get('_exp', $this->node->getNodePath());
 
         $listAction = $this->readAttr('action');
         $className = Str::studly($listAction);
-        $action = $this->createAction("{$className}Action", [$this->node, $this->cache, $this->prefix, $this->ttl]);
+        $action = $this->createAction("{$className}Action", [$this->node, $this->store]);
         $listItems = json_decode($action->handle(), true);
 
         $listName = $this->readAttr('name');
-        $this->toCache("{$listName}_list", $listItems);
+        $this->store->put("{$listName}_list", $listItems);
 
         $pos = 0;
         foreach ($listItems as $listItem) {
@@ -39,8 +39,8 @@ class ListTag extends BaseTag implements AnswerableTag
             $body .= "\n0) Back";
         }
 
-        $this->toCache("pre", $exp);
-        $this->toCache("exp", $this->incExp($exp));
+        $this->store->put('_pre', $exp);
+        $this->store->put('_exp', $this->incExp($exp));
 
         return "{$header}{$body}";
     }
@@ -51,8 +51,8 @@ class ListTag extends BaseTag implements AnswerableTag
             throw new \Exception('Make a choice.');
         }
 
-        $pre = $this->fromCache("pre");
-        $exp = $this->fromCache("exp", $this->node->getNodePath());
+        $pre = $this->store->get('_pre');
+        $exp = $this->store->get('_exp', $this->node->getNodePath());
 
         if ('0' === $answer) {
             if ($this->readAttr('noback')) {
@@ -61,13 +61,13 @@ class ListTag extends BaseTag implements AnswerableTag
 
             $exp = $this->goBack($pre, 2);
 
-            $this->toCache("exp", $exp);
+            $this->store->put('_exp', $exp);
 
             return;
         }
 
         $listName = $this->readAttr('name');
-        $listItems = $this->cache->pull("{$this->prefix}_{$listName}_list", []);
+        $listItems = $this->store->pull("{$listName}_list", []);
 
         if ((int) $answer > \count($listItems)) {
             throw new \Exception('Invalid choice.');
@@ -77,9 +77,8 @@ class ListTag extends BaseTag implements AnswerableTag
 
         $item = new Item($listItems[$answer]);
 
-        $this->toCache("{$listName}_id", $item->id);
-        $this->toCache("{$listName}_label", $item->label);
-
+        $this->store->put("{$listName}_id", $item->id);
+        $this->store->put("{$listName}_label", $item->label);
     }
 
     protected function goBack(string $exp, int $steps = 1): string
