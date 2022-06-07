@@ -4,11 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Bmatovu\Ussd\Parser;
-use Illuminate\Contracts\Cache\Repository as CacheContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -17,9 +15,7 @@ class UssdController extends Controller
     const FC = 'continue';
     const FB = 'break';
 
-    protected CacheContract $cache;
-
-    public function __construct(CacheContract $cache)
+    public function __construct()
     {
         $this->cache = $cache;
         // $this->middleware('log:api');
@@ -47,11 +43,11 @@ class UssdController extends Controller
         }
 
         try {
-            $doc = new \DOMDocument();
-
             if(Storage::disk('local')->missing('ussd/sacco.xml')) {
                 return response()->json(['flow' => self::FB, 'data' => 'Missing menu file.']);
             }
+
+            $doc = new \DOMDocument();
 
             $doc->load(Storage::disk('local')->path('ussd/sacco.xml'));
 
@@ -75,6 +71,9 @@ class UssdController extends Controller
             ->header('X-USSD-FLOW',self::FC);
     }
 
+    /**
+     * @see https://developers.africastalking.com/docs/ussd/overview
+     */
     public function africastalking(Request $request): Response
     {
         $validator = Validator::make($request->all(), [
@@ -92,11 +91,11 @@ class UssdController extends Controller
         }
 
         try {
-            $doc = new \DOMDocument();
-
             if(Storage::disk('local')->missing('ussd/sacco.xml')) {
                 return response('END Missing menu file.');
             }
+
+            $doc = new \DOMDocument();
 
             $doc->load(Storage::disk('local')->path('ussd/sacco.xml'));
 
@@ -108,9 +107,6 @@ class UssdController extends Controller
                 ]);
 
             $output = $parser->parse($request->text);
-
-            // $answer = $this->lastInput($request->text);
-            // $output = $parser->parse($answer);
         } catch(\Exception $ex) {
             return response("END " . $ex->getMessage());
         }
@@ -118,6 +114,182 @@ class UssdController extends Controller
         return response("CON {$output}");
     }
 
+    /**
+     * @see https://developers.arkesel.com API Documentation
+     */
+    public function arkesel(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'sessionID' => 'required|string',
+            'network' => 'nullable|string',
+            'msisdn' => 'required|string',
+            'userData' => 'nullable|string',
+            'newSession' => 'required|bool',
+            'userID' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'sessionID' => $request->sessionID,
+                'msisdn' => $request->msisdn,
+                'userID' => $request->userID,
+                'continueSession' => false,
+                'message' => 'The given data was invalid.',
+                // 'errors' => $validator->errors(),
+            ]);
+        }
+
+        try {
+            if(Storage::disk('local')->missing('ussd/sacco.xml')) {
+                throw new \Exception("Missing menu file.");
+            }
+
+            $doc = new \DOMDocument();
+
+            $doc->load(Storage::disk('local')->path('ussd/sacco.xml'));
+
+            $xpath = new \DOMXPath($doc);
+
+            $serviceCode = $request->newSession ? $request->userData : '';
+
+            $parser = (new Parser($xpath, '/menu/*[1]', $request->sessionID, $serviceCode))
+                ->setOptions([
+                    'phone_number' => $request->msisdn,
+                ]);
+
+            $output = $parser->parse($request->userData);
+        } catch(\Exception $ex) {
+            return response()->json([
+                'sessionID' => $request->sessionID,
+                'msisdn' => $request->msisdn,
+                'userID' => $request->userID,
+                'continueSession' => false,
+                'message' => $ex->getMessage(),
+            ]);
+        }
+
+        return response()->json([
+            'sessionID' => $request->sessionID,
+            'msisdn' => $request->msisdn,
+            'userID' => $request->userID,
+            'continueSession' => true,
+            'message' => $output,
+        ]);
+    }
+
+    /**
+     * @see https://simussd.interpayafrica.com USSD Simulator
+     * @see https://www.scribd.com/document/533763762/Emergent-Technology-USSD-Gateway-API-V1-0-0-2
+     */
+    public function emergent(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'sessionId' => 'required|string',
+            'Mobile' => 'required|string',
+            'USERID' => 'nullable|string',
+            'Type' => 'nullable|string',
+            'Operator' => 'nullable|string',
+            'Message' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'Message' => 'The given data was invalid.',
+                // 'errors' => $validator->errors(),
+                'Type' => 'Release',
+            ]);
+        }
+
+        try {
+            if(Storage::disk('local')->missing('ussd/sacco.xml')) {
+                throw new \Exception("Missing menu file.");
+            }
+
+            $doc = new \DOMDocument();
+
+            $doc->load(Storage::disk('local')->path('ussd/sacco.xml'));
+
+            $xpath = new \DOMXPath($doc);
+
+            $parser = (new Parser($xpath, '/menu/*[1]', $request->sessionId, $request->USERID))
+                ->setOptions([
+                    'phone_number' => $request->Mobile,
+                ]);
+
+            $output = $parser->parse($request->Message);
+        } catch(\Exception $ex) {
+            return response()->json([
+                'Message' => $ex->getMessage(),
+                'Type' => 'Release',
+            ]);
+        }
+
+        return response()->json([
+            'Message' => $output,
+            'Type' => 'Response',
+            'MaskNextRoute' => true,
+        ]);
+    }
+
+    /**
+     * @see https://developers.hubtel.com
+     * @see https://github.com/hubtel/ussd-mocker
+     * @see https://techmatters.me/2020-01-04-test-ussd-application-with-hubtel-ussd-gateway
+     * @see http://ussdsimulator.herokuapp.com
+     */
+    public function hubtel(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'SessionId' => 'required|string',
+            'Mobile' => 'required|string',
+            'ServiceCode' => 'nullable|string',
+            'Type' => 'nullable|string',
+            'Operator' => 'nullable|string',
+            'Message' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'Message' => 'The given data was invalid.',
+                // 'errors' => $validator->errors(),
+                'Type' => 'Release',
+            ]);
+        }
+
+        try {
+            if(Storage::disk('local')->missing('ussd/sacco.xml')) {
+                throw new \Exception("Missing menu file.");
+            }
+
+            $doc = new \DOMDocument();
+
+            $doc->load(Storage::disk('local')->path('ussd/sacco.xml'));
+
+            $xpath = new \DOMXPath($doc);
+
+            $parser = (new Parser($xpath, '/menu/*[1]', $request->SessionId, $request->ServiceCode))
+                ->setOptions([
+                    'phone_number' => $request->Mobile,
+                ]);
+
+            $output = $parser->parse($request->Message);
+        } catch(\Exception $ex) {
+            return response()->json([
+                'Message' => $ex->getMessage(),
+                'Type' => 'Release',
+            ]);
+        }
+
+        return response()->json([
+            'Message' => $output,
+            'Type' => 'Response',
+        ]);
+    }
+
+    /**
+     * @see https://ussdsimulator.pessewa.com
+     * @see https://www.korba365.com
+     */
     public function korba(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
@@ -138,28 +310,22 @@ class UssdController extends Controller
         }
 
         try {
-            $doc = new \DOMDocument();
-
             if(Storage::disk('local')->missing('ussd/sacco.xml')) {
                 throw new \Exception("Missing menu file.");
             }
+
+            $doc = new \DOMDocument();
 
             $doc->load(Storage::disk('local')->path('ussd/sacco.xml'));
 
             $xpath = new \DOMXPath($doc);
 
-            $options = [
-                'session_id' => $request->sessionID,
-                'phone_number' => '256772100103', //preg_replace('/[^0-9]/', '', $request->msisdn),
-                'service_code' => '*308#', // $request->serviceCode,
-                'expression' => '/menu/*[1]',
-            ];
+            $parser = (new Parser($xpath, '/menu/*[1]', $request->sessionID))
+                ->setOptions([
+                    'phone_number' => $request->msisdn,
+                ]);
 
-            $parser = new Parser($xpath, $options, $this->cache, 120);
-
-            $answer = $this->lastInput($request->ussdString);
-
-            $output = $parser->parse($answer);
+            $output = $parser->parse($request->ussdString);
         } catch(\Exception $ex) {
             return response()->json([
                 'ussdServiceOp' => 1,
@@ -173,6 +339,10 @@ class UssdController extends Controller
         ]);
     }
 
+    /**
+     * @see https://ussdsimulator.pessewa.com
+     * @see https://documenter.getpostman.com/view/7705958/UyrEhaLQ
+     */
     public function nalo(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
@@ -193,28 +363,22 @@ class UssdController extends Controller
         }
 
         try {
-            $doc = new \DOMDocument();
-
             if(Storage::disk('local')->missing('ussd/sacco.xml')) {
                 throw new \Exception("Missing menu file.");
             }
+
+            $doc = new \DOMDocument();
 
             $doc->load(Storage::disk('local')->path('ussd/sacco.xml'));
 
             $xpath = new \DOMXPath($doc);
 
-            $options = [
-                'session_id' => $request->USERID,
-                'phone_number' => '256772100103', //preg_replace('/[^0-9]/', '', $request->MSISDN),
-                'service_code' => '*308#', // $request->serviceCode,
-                'expression' => '/menu/*[1]',
-            ];
+            $parser = (new Parser($xpath, '/menu/*[1]', $request->USERID))
+                ->setOptions([
+                    'phone_number' => $request->MSISDN,
+                ]);
 
-            $parser = new Parser($xpath, $options, $this->cache, 120);
-
-            $answer = $this->lastInput($request->USERDATA);
-
-            $output = $parser->parse($answer);
+            $output = $parser->parse($request->USERDATA);
         } catch(\Exception $ex) {
             return response()->json([
                 'MSGTYPE' => false,
@@ -228,6 +392,10 @@ class UssdController extends Controller
         ]);
     }
 
+    /**
+     * @see https://ussdsimulator.pessewa.com
+     * @see https://www.nsano.com/pages/developers.html
+     */
     public function nsano(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
@@ -250,28 +418,22 @@ class UssdController extends Controller
         }
 
         try {
-            $doc = new \DOMDocument();
-
             if(Storage::disk('local')->missing('ussd/sacco.xml')) {
                 throw new \Exception("Missing menu file.");
             }
+
+            $doc = new \DOMDocument();
 
             $doc->load(Storage::disk('local')->path('ussd/sacco.xml'));
 
             $xpath = new \DOMXPath($doc);
 
-            $options = [
-                'session_id' => $request->UserSessionID,
-                'phone_number' => '256772100103', //preg_replace('/[^0-9]/', '', $request->msisdn),
-                'service_code' => '*308#', // $request->serviceCode,
-                'expression' => '/menu/*[1]',
-            ];
+            $parser = (new Parser($xpath, '/menu/*[1]', $request->UserSessionID))
+                ->setOptions([
+                    'phone_number' => $request->msisdn,
+                ]);
 
-            $parser = new Parser($xpath, $options, $this->cache, 120);
-
-            $answer = $this->lastInput($request->msg);
-
-            $output = $parser->parse($answer);
+            $output = $parser->parse($request->msg);
         } catch(\Exception $ex) {
             return response()->json([
                 'USSDResp' => [
@@ -295,43 +457,133 @@ class UssdController extends Controller
         ]);
     }
 
-    protected function lastInput(?string $input) : ?string
+    /**
+     * @see https://ussd.southpawsl.com
+     */
+    public function southpawsl(Request $request): JsonResponse
     {
-        if(! $input) {
-            return $input;
+        $validator = Validator::make($request->all(), [
+            'sessionId' => 'required|string',
+            'msisdn' => 'required|string',
+            'ussdString' => 'nullable|string',
+            // 'menuId' => 'nullable|string',
+            // 'ussdParameters' => 'nullable|string',
+            // 'network' => 'nullable|string',
+            'text' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                // 'errors' => $validator->errors(),
+                'state' => 'END',
+                'menuId' => $request->menuId,
+                'ussdString' => $request->ussdString,
+                'option' => '', // *
+                'ussdParameter' => $request->ussdParameters,
+            ]);
         }
 
-        if(! preg_match('/^[\d+\*]+[\d+]$/', $input)) {
-            return $input;
+        try {
+            if(Storage::disk('local')->missing('ussd/sacco.xml')) {
+                throw new \Exception("Missing menu file.");
+            }
+
+            $doc = new \DOMDocument();
+
+            $doc->load(Storage::disk('local')->path('ussd/sacco.xml'));
+
+            $xpath = new \DOMXPath($doc);
+
+            $parser = (new Parser($xpath, '/menu/*[1]', $request->sessionId, $request->ussdString))
+                ->setOptions([
+                    'phone_number' => $request->msisdn,
+                ]);
+
+            $output = $parser->parse($request->text);
+        } catch(\Exception $ex) {
+            return response()->json([
+                'message' => $ex->getMessage(),
+                'state' => 'END',
+                'menuId' => $request->menuId,
+                'ussdString' => $request->ussdString,
+                'option' => '', // *
+                'ussdParameter' => $request->ussdParameters,
+            ]);
         }
 
-        $inputs = explode('*', $input);
-
-        return end($inputs);
+        return response()->json([
+            'message' => $output,
+            'state' => 'CONTINUE',
+            'menuId' => $request->menuId,
+            'ussdString' => $request->ussdString,
+            'option' => '', // *
+            'ussdParameter' => $request->ussdParameters,
+        ]);
     }
 
-    protected function clean(string $code = ''): string
+    /**
+     * @see https://docs.cross-switch.app/ussd-api-reference
+     */
+    public function crossSwitch(Request $request): JsonResponse
     {
-        if(! $code) {
-            return $code;
+        $validator = Validator::make($request->all(), [
+            'sessionId' => 'required|string',
+            'msisdn' => 'required|string',
+            'ussdString' => 'nullable|string',
+            // 'menuId' => 'nullable|string',
+            // 'ussdParameters' => 'nullable|string',
+            // 'network' => 'nullable|string',
+            'text' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                // 'errors' => $validator->errors(),
+                'state' => 'END',
+                'menuId' => $request->menuId,
+                'ussdString' => $request->ussdString,
+                'option' => '', // *
+                'ussdParameter' => $request->ussdParameters,
+            ]);
         }
 
-        return rtrim(ltrim($code, '*'), '#');
-    }
+        try {
+            if(Storage::disk('local')->missing('ussd/sacco.xml')) {
+                throw new \Exception("Missing menu file.");
+            }
 
-    protected function getAnswer(string $userInput = '', string $serviceCode = ''): string
-    {
-        if(! $userInput) {
-            return '';
+            $doc = new \DOMDocument();
+
+            $doc->load(Storage::disk('local')->path('ussd/sacco.xml'));
+
+            $xpath = new \DOMXPath($doc);
+
+            $parser = (new Parser($xpath, '/menu/*[1]', $request->sessionId, $request->ussdString))
+                ->setOptions([
+                    'phone_number' => $request->msisdn,
+                ]);
+
+            $output = $parser->parse($request->text);
+        } catch(\Exception $ex) {
+            return response()->json([
+                'message' => $ex->getMessage(),
+                'state' => 'END',
+                'menuId' => $request->menuId,
+                'ussdString' => $request->ussdString,
+                'option' => '', // *
+                'ussdParameter' => $request->ussdParameters,
+            ]);
         }
 
-        if(! $serviceCode) {
-            return clean($userInput);
-        }
-
-        $userInput = clean($userInput);
-        $serviceCode = clean($serviceCode);
-
-        return clean(str_replace($serviceCode, '', $userInput));
+        return response()->json([
+            'message' => $output,
+            'state' => 'CONTINUE',
+            'menuId' => $request->menuId,
+            'ussdString' => $request->ussdString,
+            'option' => '', // *
+            'ussdParameter' => $request->ussdParameters,
+        ]);
     }
 }
