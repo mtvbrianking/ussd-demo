@@ -39,8 +39,8 @@ def main():
 
     parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('phone', action="store", help="MSISDN")
-    parser.add_argument('--dail', help="User request", type=str, default="*308#", metavar='')
-    parser.add_argument('--service', help="USSD shortcode", type=str, default="*308#", metavar='')
+    parser.add_argument('--dail', help="User request", type=str, default="*721#", metavar='')
+    parser.add_argument('--service', help="USSD shortcode", type=str, default="*721#", metavar='')
     parser.add_argument('--network', help="Network code", type=str, default="6001", metavar='')
     parser.add_argument('--session', help="Session ID *Auto Generated", type=str, default="", metavar='')
     parser.add_argument('--api', help="API URI", type=str, default="http://localhost:8000/api/ussd", metavar='')
@@ -55,7 +55,7 @@ def main():
 
     dail = service if args.dail == '' else clean(args.dail)
 
-    answer = clean(dail.replace(service, ''))
+    # answer = clean(dail.replace(service, ''))
 
     body = {
         'session_id': session_id,
@@ -63,28 +63,30 @@ def main():
         'phone_number': args.phone,
         'input': dail,
         'service_code': service,
-        'answer': answer
+        'new_session': 'yes',
+        # 'answer': answer
     }
 
     response = ussd(args.api, body)
 
     validate(response)
 
-    answer = input(response.json()['data'] + "\n")
+    dail = input(response.json()['data'] + "\n")
 
     # ..................................
 
     while True:
-        dail += "*" + answer
+        # dail += "*" + answer
 
         body['input'] = dail
-        body['answer'] = answer
+        # body['answer'] = answer
+        body['new_session'] = 'no'
 
         response = ussd(args.api, body)
 
         validate(response)
 
-        answer = input("\n" + response.json()['data'] + "\n")
+        dail = input("\n" + response.json()['data'] + "\n")
 
 if __name__ == '__main__':
     try:
