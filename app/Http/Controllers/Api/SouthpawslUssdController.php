@@ -48,17 +48,13 @@ class SouthpawslUssdController extends Controller
         }
 
         try {
-            if(Storage::disk('local')->missing('ussd/sacco.xml')) {
-                throw new \Exception("Missing menu file.");
-            }
-
             $doc = new \DOMDocument();
 
-            $doc->load(Storage::disk('local')->path('ussd/sacco.xml'));
+            $doc->load(menus_path('menus.xml'));
 
             $xpath = new \DOMXPath($doc);
 
-            $parser = (new Parser($xpath, '/menu/*[1]', $request->sessionId))
+            $parser = (new Parser($xpath, "/menus/menu[@name='sacco']/*[1]", $request->sessionId))
                 ->save([
                     'phone_number' => preg_replace('/[^0-9]/', '', $request->msisdn),
                 ]);

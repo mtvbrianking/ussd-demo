@@ -4,6 +4,12 @@
     "description": "Demo USSD Application.",
     "keywords": ["laravel", "ussd", "application"],
     "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../laravel-ussd"
+        }
+    ],
     "require": {
         "php": "^7.3|^8.0",
         "bmatovu/laravel-ussd": "*",

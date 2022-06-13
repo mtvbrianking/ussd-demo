@@ -37,17 +37,13 @@ class AfricasTalkingUssdController extends Controller
         }
 
         try {
-            if(Storage::disk('local')->missing('ussd/sacco.xml')) {
-                return response('END Missing menu file.');
-            }
-
             $doc = new \DOMDocument();
 
-            $doc->load(Storage::disk('local')->path('ussd/sacco.xml'));
+            $doc->load(menus_path('menus.xml'));
 
             $xpath = new \DOMXPath($doc);
 
-            $parser = (new Parser($xpath, '/menu/*[1]', $request->sessionId))
+            $parser = (new Parser($xpath, "/menus/menu[@name='sacco']/*[1]", $request->sessionId))
                 ->save([
                     // 'service_code' => $request->serviceCode,
                     // 'network_code' => $request->networkCode,
