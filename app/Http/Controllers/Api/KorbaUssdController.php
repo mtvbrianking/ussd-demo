@@ -45,11 +45,11 @@ class KorbaUssdController extends Controller
         try {
             $doc = new \DOMDocument();
 
-            $doc->load(menus_path('menus.xml'));
+            $doc->load(menus_path('menu.xml'));
 
             $xpath = new \DOMXPath($doc);
 
-            $parser = (new Parser($xpath, "/menus/menu[@name='sacco']/*[1]", $request->sessionID))
+            $parser = (new Parser($xpath, $request->sessionID))
                 ->save([
                     'phone_number' => preg_replace('/[^0-9]/', '', $request->msisdn),
                 ]);

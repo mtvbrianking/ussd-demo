@@ -39,11 +39,11 @@ class AfricasTalkingUssdController extends Controller
         try {
             $doc = new \DOMDocument();
 
-            $doc->load(menus_path('menus.xml'));
+            $doc->load(menus_path('menu.xml'));
 
             $xpath = new \DOMXPath($doc);
 
-            $parser = (new Parser($xpath, "/menus/menu[@name='sacco']/*[1]", $request->sessionId))
+            $parser = (new Parser($xpath, $request->sessionId))
                 ->save([
                     // 'service_code' => $request->serviceCode,
                     // 'network_code' => $request->networkCode,
