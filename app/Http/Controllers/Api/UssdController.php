@@ -19,7 +19,7 @@ class UssdController extends Controller
 
     public function __construct()
     {
-        $this->middleware('log:api');
+        // $this->middleware('log:api');
     }
 
     public function __invoke(Request $request): JsonResponse

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "74c0165648293f9c79353b0638e0957d",
+    "content-hash": "85dd0815654111b8036bf455aed3d586",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -68,19 +68,20 @@
             "dist": {
                 "type": "path",
                 "url": "../laravel-ussd",
-                "reference": "fe11687b223a8d45e6ebc162a9249df1f6c7fe34"
+                "reference": "073e4fac820e08ef3240dbfece2a19fb6615813a"
             },
             "require": {
                 "illuminate/container": "^6.0|^7.0|^8.0|^9.0",
                 "illuminate/contracts": "^6.0|^7.0|^8.0|^9.0",
                 "illuminate/support": "^6.0|^7.0|^8.0|^9.0",
-                "php": "^7.2.5|^8.0"
+                "php": "^7.4|^8.0",
+                "spatie/data-transfer-object": "^2.0|^3.0"
             },
             "require-dev": {
                 "code-lts/doctum": "^5.5",
                 "friendsofphp/php-cs-fixer": "^3.0",
                 "guzzlehttp/guzzle": "^6.3|^7.0",
-                "orchestra/testbench": "^4.0|^5.0|^6.0",
+                "orchestra/testbench": "^3.0|^4.0|^5.0|^6.0",
                 "phpunit/phpunit": "^8.0|^9.0",
                 "symfony/console": "^4.3.4|^5.0|^6.0"
             },

@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <menu name="sacco">
     <action name="check-user"/>
+    <!-- <dummy/> -->
     <options header="SACCO Services" noback="no">
         <option text="Savings">
-            <list header="Saving Accounts" name="account" action="fetch-savings-accounts"/>
+            <list header="Saving Accounts" provider="saving-accounts" prefix="account"/>
             <options header="Savings">
                 <option text="Deposit">
                     <options header="Deposit From:">
