@@ -16,7 +16,7 @@ class SavingAccountsProvider implements ListProvider
         $this->store = $store;
     }
 
-    public function load(): ListItems
+    public function load(): array
     {
         $user_id = $this->store->get('user_id');
 
@@ -28,28 +28,11 @@ class SavingAccountsProvider implements ListProvider
             throw new \Exception('You have no saving accounts.');
         }
 
-        $accounts = $savingAccounts->map(function($account) {
+        return $savingAccounts->map(function($account) {
             return [
                 'id' => $account->id,
                 'label' => $account->number,
             ];
         })->toArray();
-
-        return new ListItems(['items' => $accounts]);
     }
 }
-
-// $item = new Item(['id' => 1, 'label' => 'jdoe']);
-
-// $items = [
-//     ['id' => 1, 'label' => 'jdoe'],
-//     ['id' => '2', 'label' => 'bmatovu'],
-// ];
-
-// $list1 = new ListItems(items: $items);
-
-// $_list1 = $list1->toArray();
-
-// $list2 = new ListItems($_list1);
-
-// $list2->items[1];

@@ -19,7 +19,7 @@ class UssdController extends Controller
 
     public function __construct()
     {
-        // $this->middleware('log:api');
+        $this->middleware('log:api');
     }
 
     public function __invoke(Request $request): JsonResponse
@@ -38,7 +38,7 @@ class UssdController extends Controller
                 ->json([
                     'flow' => self::FB,
                     'data' => 'The given data was invalid.',
-                    // 'errors' => $validator->errors(),
+                    'errors' => $validator->errors(),
                 ]);
         }
 
