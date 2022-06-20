@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Bmatovu\Ussd\Parser;
+use Bmatovu\Ussd\Ussd;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
@@ -43,13 +43,7 @@ class UssdController extends Controller
         }
 
         try {
-            $doc = new \DOMDocument();
-
-            $doc->load(menus_path('menu.xml'));
-
-            $xpath = new \DOMXPath($doc);
-
-            $parser = (new Parser($xpath, $request->session_id))
+            $ussd = (new Ussd('menu.xml', $request->session_id))
                 ->entry('/menu/*[1]')
                 ->save([
                     'phone_number' => preg_replace('/[^0-9]/', '', $request->phone_number),
@@ -58,7 +52,7 @@ class UssdController extends Controller
             $input = $request->new_session == 'no' ? $request->input : '';
             // $input = $this->getAnswer($request->new_session, $request->input, self::SC);
 
-            $output = $parser->parse($input);
+            $output = $ussd->handle($input);
         } catch(\Exception $ex) {
             return response()->json(['flow' => self::FB, 'data' => $ex->getMessage()]);
         }

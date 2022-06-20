@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Bmatovu\Ussd\Parser;
+use Bmatovu\Ussd\Ussd;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
@@ -45,20 +45,14 @@ class NsanoUssdController extends Controller
         }
 
         try {
-            $doc = new \DOMDocument();
-
-            $doc->load(menus_path('menu.xml'));
-
-            $xpath = new \DOMXPath($doc);
-
-            $parser = (new Parser($xpath, $request->UserSessionID))
+            $ussd = (new Ussd('menu.xml', $request->UserSessionID))
                 ->save([
                     'phone_number' => preg_replace('/[^0-9]/', '', $request->msisdn),
                 ]);
 
             $message = $this->getInput(self::SC, $request->msg);
 
-            $output = $parser->parse($message);
+            $output = $ussd->handle($message);
         } catch(\Exception $ex) {
             return response()->json([
                 'USSDResp' => [

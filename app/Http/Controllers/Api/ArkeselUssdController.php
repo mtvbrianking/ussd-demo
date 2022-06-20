@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Bmatovu\Ussd\Parser;
+use Bmatovu\Ussd\Ussd;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
@@ -46,13 +46,7 @@ class ArkeselUssdController extends Controller
         }
 
         try {
-            $doc = new \DOMDocument();
-
-            $doc->load(menus_path('menu.xml'));
-
-            $xpath = new \DOMXPath($doc);
-
-            $parser = (new Parser($xpath, $request->sessionID))
+            $ussd = (new Ussd('menu.xml', $request->sessionID))
                 ->save([
                     'phone_number' => preg_replace('/[^0-9]/', '', $request->msisdn),
                 ]);
@@ -60,7 +54,7 @@ class ArkeselUssdController extends Controller
             $input = $request->newSession ? '' : $request->userData;
             // $input = $this->getAnswer($request->newSession, $request->USERDATA, self::SC);
 
-            $output = $parser->parse($input);
+            $output = $ussd->handle($input);
         } catch(\Exception $ex) {
             return response()->json([
                 'sessionID' => $request->sessionID,

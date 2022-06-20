@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Bmatovu\Ussd\Parser;
+use Bmatovu\Ussd\Ussd;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
@@ -48,18 +48,12 @@ class CrossSwitchUssdController extends Controller
         }
 
         try {
-            $doc = new \DOMDocument();
-
-            $doc->load(menus_path('menu.xml'));
-
-            $xpath = new \DOMXPath($doc);
-
-            $parser = (new Parser($xpath, $request->sessionId))
+            $ussd = (new Ussd('menu.xml', $request->sessionId))
                 ->save([
                     'phone_number' => preg_replace('/[^0-9]/', '', $request->msisdn),
                 ]);
 
-            $output = $parser->parse($request->text);
+            $output = $ussd->handle($request->text);
         } catch(\Exception $ex) {
             return response()->json([
                 'message' => $ex->getMessage(),

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Bmatovu\Ussd\Parser;
+use Bmatovu\Ussd\Ussd;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -43,13 +43,7 @@ class EmergentUssdController extends Controller
         }
 
         try {
-            $doc = new \DOMDocument();
-
-            $doc->load(menus_path('menu.xml'));
-
-            $xpath = new \DOMXPath($doc);
-
-            $parser = (new Parser($xpath, $request->SessionId))
+            $ussd = (new Ussd('menu.xml', $request->SessionId))
                 ->save([
                     // 'service_code' => $request->ServiceCode,
                     // 'operator' => $request->Operator,
@@ -59,7 +53,7 @@ class EmergentUssdController extends Controller
             $message = $request->Type == 'Response' ? $request->Message : '';
             // $message = $this->getInput($request->Type, $request->Message, $request->ServiceCode);
 
-            $output = $parser->parse($message);
+            $output = $ussd->handle($message);
         } catch(\Exception $ex) {
             return response()->json([
                 'Message' => $ex->getMessage(),

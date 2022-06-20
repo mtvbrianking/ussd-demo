@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "85dd0815654111b8036bf455aed3d586",
+    "content-hash": "6dd61a941170eae12365e44a9b48d3f0",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -64,17 +64,23 @@
         },
         {
             "name": "bmatovu/laravel-ussd",
-            "version": "dev-master",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mtvbrianking/laravel-ussd.git",
+                "reference": "45279d67c6a4d6a600daf52e4aa1181ad5930475"
+            },
             "dist": {
-                "type": "path",
-                "url": "../laravel-ussd",
-                "reference": "259284530c3a2395dfda4fe87313060318d40119"
+                "type": "zip",
+                "url": "https://api.github.com/repos/mtvbrianking/laravel-ussd/zipball/45279d67c6a4d6a600daf52e4aa1181ad5930475",
+                "reference": "45279d67c6a4d6a600daf52e4aa1181ad5930475",
+                "shasum": ""
             },
             "require": {
                 "illuminate/container": "^6.0|^7.0|^8.0|^9.0",
                 "illuminate/contracts": "^6.0|^7.0|^8.0|^9.0",
                 "illuminate/support": "^6.0|^7.0|^8.0|^9.0",
-                "php": "^7.2.5|^8.0"
+                "php": "^7.4|^8.0"
             },
             "require-dev": {
                 "code-lts/doctum": "^5.5",
@@ -103,28 +109,7 @@
                     "Bmatovu\\Ussd\\": "src/"
                 }
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "Bmatovu\\Ussd\\Tests\\": "tests/"
-                }
-            },
-            "scripts": {
-                "cs-fix": [
-                    "php-cs-fixer fix"
-                ],
-                "cs-lint": [
-                    "php-cs-fixer fix --dry-run"
-                ],
-                "doc": [
-                    "doctum.php update doctum.php"
-                ],
-                "test": [
-                    "phpunit"
-                ],
-                "test-coverage": [
-                    "phpunit --coverage-html coverage"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -147,9 +132,11 @@
                 "ussd",
                 "xml"
             ],
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "issues": "https://github.com/mtvbrianking/laravel-ussd/issues",
+                "source": "https://github.com/mtvbrianking/laravel-ussd/tree/v1.0.0"
+            },
+            "time": "2022-06-20T07:02:27+00:00"
         },
         {
             "name": "brick/math",
@@ -6873,16 +6860,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "9.5.20",
+            "version": "9.5.21",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "12bc8879fb65aef2138b26fc633cb1e3620cffba"
+                "reference": "0e32b76be457de00e83213528f6bb37e2a38fcb1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/12bc8879fb65aef2138b26fc633cb1e3620cffba",
-                "reference": "12bc8879fb65aef2138b26fc633cb1e3620cffba",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/0e32b76be457de00e83213528f6bb37e2a38fcb1",
+                "reference": "0e32b76be457de00e83213528f6bb37e2a38fcb1",
                 "shasum": ""
             },
             "require": {
@@ -6916,7 +6903,6 @@
                 "sebastian/version": "^3.0.2"
             },
             "require-dev": {
-                "ext-pdo": "*",
                 "phpspec/prophecy-phpunit": "^2.0.1"
             },
             "suggest": {
@@ -6960,7 +6946,7 @@
             ],
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/9.5.20"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/9.5.21"
             },
             "funding": [
                 {
@@ -6972,7 +6958,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2022-04-01T12:37:26+00:00"
+            "time": "2022-06-19T12:14:25+00:00"
         },
         {
             "name": "sebastian/cli-parser",
